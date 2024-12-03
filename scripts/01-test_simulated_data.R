@@ -10,80 +10,48 @@
   # - 00-simulate_data.R must have been run
 # Any other information needed? Make sure you are in the `starter_folder` rproj
 
+# Libraries
+library(testthat)
+library(dplyr)
 
-#### Workspace setup ####
-library(tidyverse)
+# Load the simulated data
+simulated_data <- read.csv("data/00-simulated_data/simulated_data.csv")
 
-analysis_data <- read_csv("data/00-simulated_data/simulated_data.csv")
+# Test 1: Check if the dataset is not empty
+test_that("Dataset is not empty", {
+  expect_true(nrow(simulated_data) > 0, "The dataset is empty.")
+})
 
-# Test if the data was successfully loaded
-if (exists("analysis_data")) {
-  message("Test Passed: The dataset was successfully loaded.")
-} else {
-  stop("Test Failed: The dataset could not be loaded.")
-}
+# Test 2: Check if necessary columns are present
+test_that("Necessary columns are present", {
+  expect_true(all(c("symbol", "date", "adjusted", "daily_return") %in% colnames(simulated_data)),
+              "One or more required columns are missing.")
+})
+
+# Test 3: Check for missing values in critical columns
+test_that("No missing values in critical columns", {
+  expect_true(all(!is.na(simulated_data$adjusted)), "There are missing values in 'adjusted' column.")
+  expect_true(all(!is.na(simulated_data$daily_return)), "There are missing values in 'daily_return' column.")
+})
+
+# Test 4: Ensure that daily_return is valid (no NA or Inf values)
+test_that("Daily return has no NA or Inf values", {
+  invalid_daily_return <- simulated_data %>%
+    filter(is.na(daily_return) | is.infinite(daily_return))
+  
+  expect_true(nrow(invalid_daily_return) == 0, "There are invalid values (NA or Inf) in the 'daily_return' column.")
+})
+
+# Test 5: Ensure adjusted price is positive
+test_that("Adjusted price is positive", {
+  expect_true(all(simulated_data$adjusted > 0), "There are non-positive values in 'adjusted' column.")
+})
+
+# Test 6: Ensure `symbol` column has the expected unique values
+test_that("Correct unique symbols", {
+  expected_symbols <- c("META", "AMZN", "AAPL", "NFLX", "GOOGL")
+  actual_symbols <- unique(simulated_data$symbol)
+  expect_true(all(actual_symbols %in% expected_symbols), "The 'symbol' column contains unexpected values.")
+})
 
 
-#### Test data ####
-
-# Check if the dataset has 151 rows
-if (nrow(analysis_data) == 151) {
-  message("Test Passed: The dataset has 151 rows.")
-} else {
-  stop("Test Failed: The dataset does not have 151 rows.")
-}
-
-# Check if the dataset has 3 columns
-if (ncol(analysis_data) == 3) {
-  message("Test Passed: The dataset has 3 columns.")
-} else {
-  stop("Test Failed: The dataset does not have 3 columns.")
-}
-
-# Check if all values in the 'division' column are unique
-if (n_distinct(analysis_data$division) == nrow(analysis_data)) {
-  message("Test Passed: All values in 'division' are unique.")
-} else {
-  stop("Test Failed: The 'division' column contains duplicate values.")
-}
-
-# Check if the 'state' column contains only valid Australian state names
-valid_states <- c("New South Wales", "Victoria", "Queensland", "South Australia", 
-                  "Western Australia", "Tasmania", "Northern Territory", 
-                  "Australian Capital Territory")
-
-if (all(analysis_data$state %in% valid_states)) {
-  message("Test Passed: The 'state' column contains only valid Australian state names.")
-} else {
-  stop("Test Failed: The 'state' column contains invalid state names.")
-}
-
-# Check if the 'party' column contains only valid party names
-valid_parties <- c("Labor", "Liberal", "Greens", "National", "Other")
-
-if (all(analysis_data$party %in% valid_parties)) {
-  message("Test Passed: The 'party' column contains only valid party names.")
-} else {
-  stop("Test Failed: The 'party' column contains invalid party names.")
-}
-
-# Check if there are any missing values in the dataset
-if (all(!is.na(analysis_data))) {
-  message("Test Passed: The dataset contains no missing values.")
-} else {
-  stop("Test Failed: The dataset contains missing values.")
-}
-
-# Check if there are no empty strings in 'division', 'state', and 'party' columns
-if (all(analysis_data$division != "" & analysis_data$state != "" & analysis_data$party != "")) {
-  message("Test Passed: There are no empty strings in 'division', 'state', or 'party'.")
-} else {
-  stop("Test Failed: There are empty strings in one or more columns.")
-}
-
-# Check if the 'party' column has at least two unique values
-if (n_distinct(analysis_data$party) >= 2) {
-  message("Test Passed: The 'party' column contains at least two unique values.")
-} else {
-  stop("Test Failed: The 'party' column contains less than two unique values.")
-}

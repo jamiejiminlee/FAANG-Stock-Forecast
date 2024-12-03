@@ -17,7 +17,7 @@ library(lubridate)
 set.seed(42)
 
 # Parameters for simulation
-symbols <- c("FB", "AMZN", "AAPL", "NFLX", "GOOGL")  # FAANG symbols
+symbols <- c("META", "AMZN", "AAPL", "NFLX", "GOOGL")  # FAANG symbols
 start_date <- as.Date("2024-12-01")
 end_date <- as.Date("2024-12-31")
 dates <- seq.Date(start_date, end_date, by = "day")  # Dates for December 2024
@@ -33,6 +33,12 @@ simulated_data <- expand.grid(date = dates, symbol = symbols) %>%
     daily_return = c(NA, diff(adjusted) / adjusted[-length(adjusted)])
   ) %>%
   ungroup()
+
+# Fix: Ensure 'symbol' is a factor with expected values
+simulated_data$symbol <- factor(simulated_data$symbol, levels = c("META", "AMZN", "AAPL", "NFLX", "GOOGL"))
+
+# Fix: Ensure 'date' is a Date object
+simulated_data$date <- as.Date(simulated_data$date)
 
 # View the simulated data
 head(simulated_data)
