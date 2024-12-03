@@ -7,63 +7,73 @@
 # Pre-requisites: [...UPDATE THIS...]
 # Any other information needed? [...UPDATE THIS...]
 
-
-#### Workspace setup ####
-library(tidyverse)
+# Libraries
 library(testthat)
+library(dplyr)
+library(arrow)
 
-data <- read_csv("data/02-analysis_data/analysis_data.csv")
+# Load the cleaned data
+analysis_data <- read_parquet("data/02-analysis_data/analysis_data.parquet")
 
-
-#### Test data ####
-# Test that the dataset has 151 rows - there are 151 divisions in Australia
-test_that("dataset has 151 rows", {
-  expect_equal(nrow(analysis_data), 151)
+# Test 1: Check if the dataset is not empty
+test_that("Dataset is not empty", {
+  expect_true(nrow(analysis_data) > 0, "The dataset is empty.")
 })
 
-# Test that the dataset has 3 columns
-test_that("dataset has 3 columns", {
-  expect_equal(ncol(analysis_data), 3)
+# Test 2: Check if the necessary columns are present in the dataset
+test_that("Necessary columns are present", {
+  expect_true(all(c("symbol", "date", "adjusted", "Lag_1", "Rolling_Mean_7", "sma_20", "sma_50", "volatility", "daily_return") %in% colnames(analysis_data)),
+              "One or more required columns are missing.")
 })
 
-# Test that the 'division' column is character type
-test_that("'division' is character", {
-  expect_type(analysis_data$division, "character")
+# Test 3: Check for missing values in critical columns
+test_that("No missing values in critical columns", {
+  expect_true(all(!is.na(analysis_data$adjusted)), "There are missing values in 'adjusted' column.")
+  expect_true(all(!is.na(analysis_data$date)), "There are missing values in 'date' column.")
 })
 
-# Test that the 'party' column is character type
-test_that("'party' is character", {
-  expect_type(analysis_data$party, "character")
+# Test 4: Ensure `Lag_1` does not have missing values except for the first row of each symbol
+test_that("Lag_1 has no missing values except for first row", {
+  missing_lag_1 <- analysis_data %>%
+    group_by(symbol) %>%
+    filter(row_number() != 1 & is.na(Lag_1))
+  
+  expect_true(nrow(missing_lag_1) == 0, "Lag_1 has missing values beyond the first row.")
 })
 
-# Test that the 'state' column is character type
-test_that("'state' is character", {
-  expect_type(analysis_data$state, "character")
+# Test 5: Check for proper calculation of the rolling mean (it should have no missing values after the 7th row)
+test_that("Rolling Mean is calculated properly", {
+  rolling_mean_7_missing <- analysis_data %>%
+    filter(is.na(Rolling_Mean_7) & date > min(date) + 6)
+  
+  expect_true(nrow(rolling_mean_7_missing) == 0, "Rolling Mean has missing values after the 7th row.")
 })
 
-# Test that there are no missing values in the dataset
-test_that("no missing values in dataset", {
-  expect_true(all(!is.na(analysis_data)))
+# Test 6: Ensure `symbol` is properly encoded as a factor
+test_that("symbol is encoded correctly", {
+  expect_true(is.numeric(analysis_data$symbol_encoded), "'symbol_encoded' is not numeric.")
+  expect_true(length(unique(analysis_data$symbol_encoded)) == length(unique(analysis_data$symbol)), "'symbol_encoded' does not match the number of unique symbols.")
 })
 
-# Test that 'division' contains unique values (no duplicates)
-test_that("'division' column contains unique values", {
-  expect_equal(length(unique(analysis_data$division)), 151)
+# Test 7: Check for no missing values in `volatility`
+test_that("Volatility has no missing values", {
+  expect_true(all(!is.na(analysis_data$volatility)), "There are missing values in 'volatility' column.")
 })
 
-# Test that 'state' contains only valid Australian state or territory names
-valid_states <- c("New South Wales", "Victoria", "Queensland", "South Australia", "Western Australia", 
-                  "Tasmania", "Northern Territory", "Australian Capital Territory")
-test_that("'state' contains valid Australian state names", {
-  expect_true(all(analysis_data$state %in% valid_states))
+# Test 8: Ensure that daily return is not infinite or missing
+test_that("Daily return has no infinite or missing values", {
+  invalid_daily_return <- analysis_data %>%
+    filter(is.na(daily_return) | is.infinite(daily_return))
+  
+  expect_true(nrow(invalid_daily_return) == 0, "There are invalid values (NA or Inf) in the 'daily_return' column.")
 })
 
-# Test that there are no empty strings in 'division', 'party', or 'state' columns
-test_that("no empty strings in 'division', 'party', or 'state' columns", {
-  expect_false(any(analysis_data$division == "" | analysis_data$party == "" | analysis_data$state == ""))
+
+# Test 9: Ensure no duplicate rows exist
+test_that("No duplicate rows", {
+  duplicates <- analysis_data %>%
+    filter(duplicated(.))
+  
+  expect_true(nrow(duplicates) == 0, "There are duplicate rows in the dataset.")
 })
 
-# Test that the 'party' column contains at least 2 unique values
-test_that("'party' column contains at least 2 unique values", {
-  expect_true(length(unique(analysis_data$party)) >= 2)
-})
