@@ -1,4 +1,4 @@
-# Post-Election FAANG Stock Price Predictions: Insights from an XGBoost Model
+# Post-Election FAANG Stock Price Forecast: Insights from an XGBoost Model
 
 ## Overview
 
