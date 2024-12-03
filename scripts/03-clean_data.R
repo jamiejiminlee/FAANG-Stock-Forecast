@@ -7,38 +7,51 @@
 # Pre-requisites: [...UPDATE THIS...]
 # Any other information needed? [...UPDATE THIS...]
 
-#### Workspace setup ####
-library(tidyverse)
+# Libraries
+library(dplyr)
+library(TTR)
+library(arrow)
 
-#### Clean data ####
-raw_data <- read_csv("inputs/data/plane_data.csv")
+# Save raw data
+raw_data <- read_csv("data/01-raw_data/raw_data.csv")
 
-cleaned_data <-
-  raw_data |>
-  janitor::clean_names() |>
-  select(wing_width_mm, wing_length_mm, flying_time_sec_first_timer) |>
-  filter(wing_width_mm != "caw") |>
+# Generate placeholder dates for December
+december_dates <- expand.grid(
+  symbol = unique(raw_data$symbol),
+  date = seq.Date(as.Date("2024-12-01"), as.Date("2024-12-31"), by = "day")
+)
+
+# Bind placeholder dates with raw_data
+raw_data_extended <- raw_data %>%
+  bind_rows(december_dates) %>%
+  arrange(symbol, date)
+
+# Interpolate and fill missing values in `adjusted`
+raw_data_extended <- raw_data_extended %>%
+  group_by(symbol) %>%
   mutate(
-    flying_time_sec_first_timer = if_else(flying_time_sec_first_timer == "1,35",
-                                   "1.35",
-                                   flying_time_sec_first_timer)
-  ) |>
-  mutate(wing_width_mm = if_else(wing_width_mm == "490",
-                                 "49",
-                                 wing_width_mm)) |>
-  mutate(wing_width_mm = if_else(wing_width_mm == "6",
-                                 "60",
-                                 wing_width_mm)) |>
-  mutate(
-    wing_width_mm = as.numeric(wing_width_mm),
-    wing_length_mm = as.numeric(wing_length_mm),
-    flying_time_sec_first_timer = as.numeric(flying_time_sec_first_timer)
-  ) |>
-  rename(flying_time = flying_time_sec_first_timer,
-         width = wing_width_mm,
-         length = wing_length_mm
-         ) |> 
-  tidyr::drop_na()
+    adjusted = na.locf(adjusted, na.rm = FALSE),  # Forward fill
+    adjusted = na.locf(adjusted, na.rm = FALSE, fromLast = TRUE)  # Backward fill
+  ) %>%
+  ungroup()
 
-#### Save data ####
-write_csv(cleaned_data, "outputs/data/analysis_data.csv")
+# Feature Engineering
+analysis_data <- raw_data_extended %>%
+  group_by(symbol) %>%
+  mutate(
+    Lag_1 = lag(adjusted, 1),
+    Rolling_Mean_7 = rollmean(adjusted, 7, fill = NA, align = "right"),
+    sma_20 = SMA(adjusted, n = 20),
+    sma_50 = SMA(adjusted, n = 50),
+    volatility = runSD(adjusted, n = 20),
+    daily_return = (adjusted / lag(adjusted)) - 1
+  ) %>%
+  ungroup() %>%
+  mutate(
+    symbol_encoded = as.numeric(as.factor(symbol)),
+    across(Lag_1:daily_return, ~ ifelse(is.na(.), 0, .))  # Handle remaining missing values
+  )
+
+# Save cleaned data
+write_parquet(analysis_data, "data/02-analysis_data/analysis_data.parquet")
+
