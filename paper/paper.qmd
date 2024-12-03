@@ -127,24 +127,95 @@ Together, these variables provide a robust framework for understanding and predi
 
 # Model
 
-The goal of our modelling strategy is twofold. Firstly,...
+## Model Overview
 
-Here we briefly describe the Bayesian analysis model used to investigate... Background details and diagnostics are included in [Appendix -@sec-model-details].
+The models in this study forecast the adjusted closing prices of FAANG stocks (Meta, Amazon, Apple, Netflix, and Google) for the months of November and December 2024. Separate models are constructed for each month to capture the time-dependent nature of stock price movements and to account for fluctuations in market conditions leading up to the forecast period. These models utilize a combination of historical stock price data and technical indicators, such as moving averages, volatility, and lagged price features, to estimate future stock prices for each of the five FAANG companies.
 
-## Model set-up
+To model the changes in stock prices over time, we use features that capture both short-term and long-term market trends. The models incorporate lagged stock prices, 7-day rolling averages, 20-day and 50-day simple moving averages (SMA), daily returns, and volatility indicators. These features are crucial for understanding the patterns and cycles in stock price movements. XGBoost, a powerful machine learning algorithm, is used to build these models, allowing for the capture of non-linear relationships and interactions between the technical indicators and future stock prices.
 
-Define $y_i$ as the number of seconds that the plane remained aloft. Then $\beta_i$ is the wing width and $\gamma_i$ is the wing length, both measured in millimeters.  
+The training datasets for the November and December models are defined using data up to October 31, 2024, and November 30, 2024, respectively. The models take into account temporal changes in stock prices by using features like lagged prices and rolling averages, which help capture the dynamics of stock price behavior. Additionally, XGBoost's flexibility allows the models to account for varying levels of volatility and market shifts across the different FAANG stocks.
 
-\begin{align} 
-y_i|\mu_i, \sigma &\sim \mbox{Normal}(\mu_i, \sigma) \\
-\mu_i &= \alpha + \beta_i + \gamma_i\\
-\alpha &\sim \mbox{Normal}(0, 2.5) \\
-\beta &\sim \mbox{Normal}(0, 2.5) \\
-\gamma &\sim \mbox{Normal}(0, 2.5) \\
-\sigma &\sim \mbox{Exponential}(1)
-\end{align}
+This modeling approach enables the prediction of future stock prices, considering how past price trends and market indicators evolve. By focusing on the November and December timeframes, the models aim to provide forecasts that reflect recent market conditions and predict likely price movements as we approach the end of 2024. The detailed model specifications, including feature selection and hyperparameter tuning, are further discussed in [Appendix -@sec-model-details]
 
-We run the model in R [@citeR] using the `rstanarm` package of @rstanarm. We use the default priors from `rstanarm`.
+## Model Assumptions
+
+To ensure the validity and reliability of our stock price prediction models, several key assumptions are made during the modeling process. These assumptions are necessary to capture the complexities of stock price behavior while maintaining a clear and interpretable framework for forecasting:
+
+- **Non-Linearity in Price Movements**: Stock prices often exhibit non-linear patterns due to various market forces, including economic news, company performance, and broader market trends. To account for these non-linearities, we use XGBoost, which allows for the modeling of complex, non-linear relationships between the predictors (such as lagged prices and moving averages) and the target variable (adjusted closing prices). This assumption ensures that the model can effectively capture the changing dynamics of stock price movements over time.
+
+- **Stationarity of Price Features**: The model assumes that the selected technical indicators—such as moving averages, volatility, and daily returns—are stationary over the forecasting period. While stock prices are inherently volatile, we assume that the patterns observed in historical data are stable enough to provide reliable predictions for the future months. This assumption allows us to model stock prices without explicitly accounting for trends or seasonality, assuming that the past behavior is a good representation of future dynamics.
+
+- **Independence of Observations**: Each daily stock price observation is assumed to be independent of the others. While stock prices are influenced by previous values (as captured through lagged features), we assume that each day's stock price data point does not directly depend on other data points in ways not captured by the lagged variables or technical indicators. This assumption is important for simplifying the modeling process and ensuring that the features can be treated as independent predictors.
+
+- **Stationarity of Model Parameters**: We assume that the relationships between the stock prices and the chosen technical indicators (e.g., moving averages, volatility) remain relatively stable over the forecast horizon. While stock prices can be influenced by many unpredictable factors, this assumption allows the model to generalize well to the forecasting periods (November and December 2024).
+
+- **Feature Importance**: We assume that the selected features—lagged prices, moving averages, volatility, and daily returns—capture the most important aspects of stock price movements for the FAANG companies. While other factors (such as macroeconomic events, news sentiment, or geopolitical developments) may influence stock prices, these features are chosen for their relevance to technical analysis and their ability to capture short-term and long-term market trends.
+
+- **Use of XGBoost’s Flexibility**: The XGBoost algorithm is assumed to be an appropriate method for this analysis due to its ability to handle large datasets, capture non-linear relationships, and deal with complex interactions between features. We assume that its regularization techniques will help prevent overfitting while still capturing the intricate patterns present in the stock price data.
+
+These assumptions form the foundation of the models and guide the interpretation of the results. While they allow for effective forecasting, it is important to acknowledge that stock price prediction is inherently uncertain, and the accuracy of predictions may vary depending on unforeseen market events and fluctuations.
+
+
+
+## Model Setup
+
+Modeling processes are conducted by employing the following packages: `tidyquant` package of @tidyquant for downloading and managing financial data, `xgboost` package of @xgboost for implementing the machine learning model, `dplyr` package of @dplyr for data manipulation, and `lubridate` package of @lubridate for handling dates and times.
+
+### November Model
+
+The primary goal of the November model is to predict the adjusted closing prices of FAANG stocks for the month of November 2024 based on historical stock price data. This model is structured as a regression task using the XGBoost algorithm to estimate the future adjusted closing prices for each of the five FAANG companies.
+
+The model setup can be described as follows:
+
+$$
+\hat{y}_{i} = f(X_i)
+$$
+
+Where:
+
+- $\hat{y}_i$ is the predicted adjusted closing price for the stock on day $i$.
+- $X_i$ represents the feature set for day $i$, which includes:
+  - `Lag_1`: The adjusted closing price of the previous day.
+  - `Rolling_Mean_7`: The 7-day rolling average of the adjusted closing price.
+  - `sma_20`: The 20-day simple moving average.
+  - `sma_50`: The 50-day simple moving average.
+  - `volatility`: The 14-day rolling standard deviation of daily returns.
+  - `daily_return`: The daily percentage change in the adjusted closing price.
+  - `symbol_encoded`: A numeric encoding for the FAANG companies (Meta, Amazon, Apple, Netflix, Google).
+
+The dataset for the November model is prepared by extracting the relevant data from January 2020 to October 31, 2024. Features like moving averages and volatility are calculated based on this historical data, and the model is trained to predict the adjusted closing prices for November 2024.
+
+The model was implemented using the **`xgboost`** package in R, which is optimized for performance in regression tasks:
+
+$$
+y_i = \text{XGBoost}(X_i, \theta)
+$$
+
+Where $y_i$ represents the actual adjusted closing price for day $i$ and $\theta$ represents the model parameters to be learned during training. The model is trained with the following key parameters:
+- **Max Depth**: 6
+- **Learning Rate**: 0.1
+- **Number of Rounds**: 100
+- **Objective Function**: Regression with squared error
+
+### December Model
+
+The December model follows a similar approach to the November model, but is trained using data up to November 30, 2024. This ensures that the model accounts for the most recent stock price movements leading up to December, providing a more accurate prediction for the final month of 2024.
+
+The setup for the December model mirrors that of the November model, with the same features and target variable, but applied to the updated dataset. The model structure remains the same, and the XGBoost algorithm is again used for regression:
+
+$$
+\hat{y}_{i} = f(X_i)
+$$
+
+Where:
+
+- $\hat{y}_i$ is the predicted adjusted closing price for the stock on day $i$ in December 2024.
+- $X_i$ includes the same features as the November model, but with data up to November 30, 2024.
+
+The December model is trained using the same XGBoost parameters as the November model. Once trained, the model will generate predictions for December 2024, leveraging the latest market conditions reflected in the training data.
+
+The assumptions and model design are consistent with the November model, with the key differences being the updated data and the forecast period. By training separate models for November and December, we can capture any evolving trends or shifts in stock price behavior as we approach the end of 2024.
+
 
 ```{r}
 #| echo: false
@@ -159,11 +230,14 @@ dec_model <- readRDS("/Users/jamielee/TechStockForecast/models/dec_model.rds")
 
 ```
 
-### Model justification
 
-We expect a positive relationship between the size of the wings and time spent aloft. In particular...
 
-We can use maths by including latex between dollar signs, for instance $\theta$.
+## Model Justification
+
+The XGBoost model is the most suitable approach for forecasting FAANG stock prices in November and December 2024. Our primary outcome variable is the adjusted closing price of each stock, which is continuous and unbounded. XGBoost, a gradient boosting algorithm, excels in handling regression tasks with large datasets, capturing complex, non-linear relationships between features such as lagged prices, moving averages, volatility, and daily returns. To model these relationships effectively, XGBoost's ability to handle feature interactions and non-linearities is key. The inclusion of rolling averages and volatility allows the model to account for both short-term fluctuations and longer-term trends in stock prices, which are often influenced by broader market dynamics. Additionally, the model's flexibility helps capture the intricacies of stock price behavior over time, ensuring that past market patterns are reflected in future predictions.
+
+While simpler models like linear regression could be used, they would fail to capture the complexity and non-linearity inherent in financial data. Machine learning techniques like random forests or support vector machines could also provide robust predictions, but XGBoost’s combination of accuracy, speed, and interpretability makes it the best choice for this analysis. Ultimately, XGBoost’s ability to learn from the data and adjust to market conditions enhances its suitability for predicting FAANG stock prices in an uncertain and volatile market environment.
+
 
 
 # Results
