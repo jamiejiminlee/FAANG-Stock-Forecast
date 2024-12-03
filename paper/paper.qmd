@@ -41,7 +41,7 @@ This paper leverages historical stock price data sourced from Yahoo Finance (202
 
 The primary estimand of this study is the predicted adjusted stock price for each FAANG company during November and December 2024, derived from features constructed using historical price trends and technical indicators. Our findings reveal that predictions for November align closely with observed trends for most stocks, reflecting the model's ability to capture short-term dynamics. However, discrepancies, such as the underestimation of NFLX prices, underscore the influence of unique stock-specific factors. For December, predictions indicate a flat trajectory across stocks, likely influenced by data limitations and post-election market sentiment.
 
-The implications of these findings extend beyond price predictions, offering a framework to evaluate market behavior in response to external factors such as elections and economic conditions. The remainder of this paper is organized as follows: Section 2 describes the data sources, variables, and preprocessing steps; Section 3 outlines the modeling approach and feature engineering strategies; Section 4 presents the results and discusses trends in predicted stock prices; and Section 5 addresses the implications and limitations of the findings, with additional model diagnostics detailed in the Appendix.
+The implications of these findings extend beyond price predictions, offering a framework to evaluate market behavior in response to external factors such as elections and economic conditions. The remainder of this paper is organized as follows: Section 2 describes the data sources, variables, and preprocessing steps; Section 3 outlines the modeling approach and feature engineering strategies; Section 4 presents the results and discusses trends in predicted stock prices; and Section 5 addresses the implications and limitations of the findings, with additional model diagnostics detailed in the [Appendix -@sec-model-details].
 
 
 # Data {#sec-data}
@@ -51,9 +51,7 @@ The implications of these findings extend beyond price predictions, offering a f
 
 This analysis uses historical stock price data for FAANG companies (Meta, Amazon, Apple, Netflix, and Google) obtained from the Yahoo Finance API via the `tidyquant` library in R on November 30, 2024. The dataset spans from January 1, 2020, to December 31, 2024, providing daily records of stock performance, including key metrics such as opening, high, low, and closing prices, trading volume, and adjusted closing prices normalized for corporate actions. To enhance the predictive power of the data, several derived features were constructed. These include lagged adjusted prices to capture sequential trends, daily returns to measure proportional changes, rolling averages to smooth short- and long-term fluctuations, and a rolling standard deviation of prices to quantify market volatility. These features offer a structured framework for identifying patterns and forecasting future stock movements.
 
-The raw data underwent pre-processing to address missing values, particularly for adjusted prices. Missing entries were filled using forward and backward imputation to ensure data continuity. Placeholder dates for December 2024 were interpolated to prepare for out-of-sample predictions. The cleaned data, prepared using the `tidyverse`, `lubridate`, `TTR`, and `arrow` libraries, provides a consistent and comprehensive foundation for modeling and analysis.
-
-Further details on the data preparation process are included in [Appendix -@sec-data-cleaning].
+The raw data underwent pre-processing to address missing values, particularly for adjusted prices. Missing entries were filled using forward and backward imputation to ensure data continuity. Placeholder dates for December 2024 were interpolated to prepare for out-of-sample predictions. The cleaned data, prepared using the `tidyverse` of [@tidyverse], `lubridate` of [@lubridate], `TTR` of [@ttr], and `arrow` of [@arrow] libraries, provides a consistent and comprehensive foundation for modeling and analysis. Further details on the data preparation process are included in [Appendix -@sec-data-details].
 
 ## Measurement
 Stock price data encapsulates market dynamics influenced by diverse factors, including macroeconomic conditions, corporate events, and investor sentiment. The raw variables in this dataset, such as **`open`**, **`high`**, **`low`**, **`close`**, and **`adjusted`**, capture key price points and provide a snapshot of market activity for each trading day. However, while these variables accurately reflect daily trading outcomes, they may not fully represent intraday fluctuations or complex trading dynamics.
@@ -62,10 +60,10 @@ Constructed variables enhance the analytical depth of the dataset by quantifying
 
 Market activity is further contextualized through **`volume`**, representing the total shares traded daily, a proxy for investor interest and liquidity. The inclusion of **`symbol_encoded`**, a numerical encoding of stock tickers, standardizes categorical data for compatibility with machine learning models. Together, these features create a robust framework for analysis, balancing raw price data with derived metrics that highlight market trends and dynamics.
 
-Despite the strengths of these variables, limitations exist. Raw price points do not account for intraday variations, while constructed metrics may oversimplify complex market behaviors. External shocks, such as economic crises or regulatory changes, may not be fully captured within the variables’ scope. Acknowledging these constraints is essential for interpreting the results and understanding the broader context of the analysis. These limitations are further discussed in {@sec-data-details}. 
+Despite the strengths of these variables, limitations exist. Raw price points do not account for intraday variations, while constructed metrics may oversimplify complex market behaviors. External shocks, such as economic crises or regulatory changes, may not be fully captured within the variables’ scope. Acknowledging these constraints is essential for interpreting the results and understanding the broader context of the analysis. These limitations are further discussed in [Appendix -@sec-data-details].
 
 
-## Variables
+## Variables {#sec-variables}
 
 The dataset used for this analysis includes both original and constructed variables, designed to capture temporal trends, volatility, and momentum in stock price movements. Below is a detailed overview of the variables included in the model:
 
@@ -94,7 +92,29 @@ The constructed variables were engineered to enhance the model's predictive perf
 
 ### Outcome Variable
 The **outcome variable** for this analysis is the **adjusted closing price (`adjusted`)**, which serves as the target for prediction. This represents the stock's closing price adjusted for corporate actions like stock splits or dividends, providing a normalized measure of stock value. The model aims to predict this variable based on historical data and constructed predictors.
+```{r}
+#| echo: false
+#| eval: true
+#| label: fig-outcome-var
+#| fig-cap: "Distribution of Adjusted Closing Prices by Stock"
+#| warning: false
 
+# Plot the distribution of the adjusted closing price, faceted by stock
+ggplot(analysis_data, aes(x = adjusted)) +
+  geom_histogram(bins = 30, fill = "blue", color = "black", alpha = 0.7) +
+  facet_wrap(~symbol, scales = "free") +
+  labs(
+    x = "Adjusted Closing Price",
+    y = "Frequency"
+  ) +
+  theme_minimal() +
+  theme(
+    text = element_text(size = 12),
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    strip.text = element_text(face = "bold")
+  )
+```
+@fig-outcome-var illustrates the distribution of the adjusted closing prices (adjusted) for each FAANG stock, faceted by stock symbol. These distributions highlight the variability in stock prices across the companies, with stocks like NFLX showing higher price ranges, whereas GOOGL and AMZN have narrower distributions. The visual emphasizes the diverse price behavior among FAANG stocks, underscoring the need for tailored models that capture these unique trends. By normalizing for corporate actions like stock splits or dividends, the adjusted closing price serves as a reliable target variable for forecasting and analysis.
 
 ### Predictor Variables
 The predictor variables used to model the adjusted closing price are:
@@ -108,7 +128,46 @@ The predictor variables used to model the adjusted closing price are:
 
 Together, these variables provide a robust framework for understanding and predicting stock price movements over time, leveraging both raw market indicators and derived metrics.
 
-# Model
+```{r}
+#| echo: false
+#| eval: true
+#| label: tbl-pred-var
+#| tbl-cap: "Random Sample of Predictive Variables for Modeling Adjusted Closing Price"
+#| warning: false
+
+# Select and display random sample of predictive variables from analysis_data
+set.seed(123) # For reproducibility
+library(dplyr)
+library(knitr)
+
+analysis_data %>%
+  select(
+    Lag_1,
+    Rolling_Mean_7,
+    sma_20,
+    sma_50,
+    volatility,
+    daily_return,
+    symbol_encoded
+  ) %>%
+  sample_n(5) %>% # Randomly sample 5 rows
+  mutate(across(everything(), ~ round(., 2))) %>% # Round to 2 decimal places
+  knitr::kable(
+    col.names = c(
+      "Lag_1",
+      "Rolling Mean (7-Day)",
+      "SMA (20-Day)",
+      "SMA (50-Day)",
+      "Volatility",
+      "Daily Return",
+      "Symbol (Encoded)"
+    )
+  )
+
+```
+@tbl-pred-var displays a random selection of five rows from the dataset, showcasing the predictive variables utilized in the modeling process. Each row represents data for a specific stock, including values for lagged adjusted closing prices (Lag_1), smoothed weekly averages (Rolling Mean (7-Day)), and medium- and long-term moving averages (SMA (20-Day) and SMA (50-Day)). These variables are complemented by measures of price volatility, daily percentage returns (Daily Return), and an encoded numerical identifier for the stock symbol (Symbol (Encoded)). All values are rounded to two decimal places to enhance clarity and precision. This table illustrates the diverse set of historical and technical indicators used to predict future adjusted stock prices.
+
+# Model {#sec-model}
 
 ## Model Overview
 
@@ -224,7 +283,7 @@ The XGBoost model is the most suitable approach for forecasting FAANG stock pric
 While simpler models like linear regression could be used, they would fail to capture the complexity and non-linearity inherent in financial data. Machine learning techniques like random forests or support vector machines could also provide robust predictions, but XGBoost’s combination of accuracy, speed, and interpretability makes it the best choice for this analysis. Ultimately, XGBoost’s ability to learn from the data and adjust to market conditions enhances its suitability for predicting FAANG stock prices in an uncertain and volatile market environment.
 
 
-# Results
+# Results {#sec-results}
 
 Using the models trained on historical data, we applied the XGBoost algorithm to predict the adjusted closing prices for each of the FAANG stocks during these two months. For November, we filtered the data from November 1st to 30th, 2024, and prepared the relevant features for prediction, including lagged prices, rolling means, and volatility indicators. Since we have the actual adjusted closing prices for November, we compare the predicted values with the actual data to evaluate model performance. For December, the same approach was applied to the data from December 1st to 31st, 2024, but since the actual prices for this month are unavailable, the results for December focus solely on the predicted values.
 
@@ -538,7 +597,7 @@ ggplot(avg_predicted_prices, aes(x = symbol, y = avg_price, fill = month)) +
 @fig-nov-dec-avg compares the average predicted stock prices for each FAANG company in November and December 2024. The chart clearly shows the predicted stock prices for November (red bars) and December (teal bars). Notably, Netflix (NFLX) is expected to experience the highest increase in stock price, with a marked difference between November and December. Meta (META) follows with a similar pattern, although the difference between months is less pronounced. In contrast, stocks like Apple (AAPL), Amazon (AMZN), and Google (GOOGL) show relatively stable predicted prices between the two months, with only slight variations. These results suggest that while some stocks, like Netflix, are predicted to have larger fluctuations, others show minimal change in their predicted prices, indicating potential stability or lack of significant market events influencing these stocks during December 2024.
 
 
-# Discussion
+# Discussion {#sec-discussion}
 
 ## Summary of Findings
 The predicted FAANG stock prices for November and December 2024 highlight several trends with real-world implications. In November, the predicted prices closely align with actual stock prices for AAPL, AMZN, and GOOGL, suggesting consistent market behavior across these stocks during the month. However, NFLX predictions were significantly lower than actual prices, likely reflecting unique market dynamics specific to the stock. These dynamics could include sector-specific factors, such as increased investor interest in streaming services, or company-specific announcements, such as major content releases or subscriber growth milestones, that were not captured in the historical data. Additionally, NFLX may be more sensitive to post-election market sentiment compared to other FAANG stocks, contributing to its divergence. Further analysis is needed to fully understand the market behavior of NFLX, particularly in response to macroeconomic and company-specific events during the period. 
@@ -644,7 +703,7 @@ This post-election stock behavior suggests that broader market reactions to elec
 # Appendix {-}
 
 
-# Additional data details
+# Additional data details {#sec-data-details}
 
 # Model details {#sec-model-details}
 
