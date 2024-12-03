@@ -501,25 +501,105 @@ ggplot(avg_predicted_prices, aes(x = symbol, y = avg_price, fill = month)) +
     fill = "Month"
   )
 ```
-
-
+The bar chart above compares the average predicted stock prices for each FAANG company in November and December 2024. The chart clearly shows the predicted stock prices for November (red bars) and December (teal bars). Notably, Netflix (NFLX) is expected to experience the highest increase in stock price, with a marked difference between November and December. Meta (META) follows with a similar pattern, although the difference between months is less pronounced. In contrast, stocks like Apple (AAPL), Amazon (AMZN), and Google (GOOGL) show relatively stable predicted prices between the two months, with only slight variations. These results suggest that while some stocks, like Netflix, are predicted to have larger fluctuations, others show minimal change in their predicted prices, indicating potential stability or lack of significant market events influencing these stocks during December 2024.
 
 
 # Discussion
 
-## First discussion point {#sec-first-point}
+## Summary of Findings
+The predicted FAANG stock prices for November and December 2024 highlight several trends with real-world implications. In November, the predicted prices closely align with actual stock prices for AAPL, AMZN, and GOOGL, suggesting consistent market behavior across these stocks during the month. However, NFLX predictions were significantly lower than actual prices, likely reflecting unique market dynamics specific to the stock. These dynamics could include sector-specific factors, such as increased investor interest in streaming services, or company-specific announcements, such as major content releases or subscriber growth milestones, that were not captured in the historical data. Additionally, NFLX may be more sensitive to post-election market sentiment compared to other FAANG stocks, contributing to its divergence. Further analysis is needed to fully understand the market behavior of NFLX, particularly in response to macroeconomic and company-specific events during the period. 
 
-If my paper were 10 pages, then should be be at least 2.5 pages. The discussion is a chance to show off what you know and what you learnt from all this. 
+For December, the steady slope in predicted prices across all stocks, with NFLX and META leading in average value, suggests an expectation of stability or consistent growth. This could reflect broader investor confidence post-election. However, this trend might also stem from the analysis data extending only until November, limiting the model’s ability to capture variations within December. These observations suggest that while the predictions provide actionable insights for short-term planning, unique stock-specific dynamics and the influence of incomplete datasets warrant further investigation to fully understand long-term trends.
 
-## Second discussion point
+## Model Performance and Limitations
 
-Please don't use these as sub-heading labels - change them to be what your point actually is.
+### November Model
+The November model demonstrated strong performance in predicting short-term stock price trends. Predictions for AAPL and GOOGL closely aligned with actual prices, indicating the model's ability to effectively leverage historical data and features like moving averages and lagged prices. This suggests that the model captured stable market behaviors for these stocks during November's relatively steady market conditions. However, the model significantly underestimated NFLX prices, pointing to its inability to account for stock-specific dynamics such as sector-specific investor sentiment or company-specific announcements. This limitation arises from the reliance on quantitative features and the exclusion of qualitative factors, such as news events or broader macroeconomic trends. The model's dependence on historical data also makes it less responsive to sudden or emerging trends, which are particularly impactful for stocks like NFLX.
 
-## Third discussion point
+### December Model
+The December model's predictions revealed a flat trajectory across all stocks, highlighting its inability to capture intra-month variations and post-election volatility. This limitation is likely due to the analysis data only extending through November, restricting the model's ability to learn patterns or fluctuations specific to December. Even with complete, constructed December data, the reliance on technical indicators and short-term historical trends may have limited the model's ability to reflect dynamic market movements. Stocks like NFLX and META, which showed consistently higher predicted averages, may reflect overfitting to earlier trends, preventing the model from adapting to potential changes in market conditions.
 
-## Weaknesses and next steps
+Further model diagnostics, including feature importance evaluations and residual analysis, are provided in the [Appendix @sec-model-details]. 
 
-Weaknesses and next steps should also be included.
+## US Election Effects
+The table illustrates the stock prices of FAANG companies one trading day before and after the elections for the years 2016, 2020, and 2024. The post-election period often shows noticeable fluctuations in stock prices, with some stocks experiencing a sharp increase and others a decrease. For example, AAPL saw a slight increase in 2016 and 2020, while AMZN and NFLX both exhibited declines in 2016. In contrast, the 2024 data reveals an overall upward trend across all FAANG stocks, with particularly strong gains for NFLX, which rose from $755.51 before the election to $780.21 after the election, reflecting a surge in stock prices.
+
+```{r}
+library(tidyquant)
+library(dplyr)
+library(tidyr)
+library(knitr)
+
+# Load FAANG tickers
+faang_tickers <- c("AAPL", "AMZN", "GOOGL", "META", "NFLX")
+
+# Load the stock data for 2016, 2020, and 2024 (adjust the date range)
+faang_2016 <- tq_get(faang_tickers, from = "2016-01-01", to = "2016-12-31", get = "stock.prices")
+faang_2020 <- tq_get(faang_tickers, from = "2020-01-01", to = "2020-12-31", get = "stock.prices")
+faang_2024 <- tq_get(faang_tickers, from = "2024-01-01", to = "2024-12-31", get = "stock.prices")
+
+# Define election dates
+election_date_2016 <- as.Date("2016-11-08")
+election_date_2020 <- as.Date("2020-11-03")
+election_date_2024 <- as.Date("2024-11-05")
+
+# Function to filter stock prices one day before and after election
+get_election_data <- function(faang_data, election_date, year) {
+  # Get the trading day before and after the election date
+  before <- faang_data %>% filter(date == election_date - 1)
+  after <- faang_data %>% filter(date == election_date + 1)
+  
+  # Add label for before and after election
+  before$label <- "Before Election"
+  after$label <- "After Election"
+  
+  # Add the year column for the current year
+  before$year <- year
+  after$year <- year
+  
+  # Combine before and after data
+  combined_data <- bind_rows(before, after)
+  return(combined_data)
+}
+
+# Get election data for 2016, 2020, and 2024
+data_2016 <- get_election_data(faang_2016, election_date_2016, 2016)
+data_2020 <- get_election_data(faang_2020, election_date_2020, 2020)
+data_2024 <- get_election_data(faang_2024, election_date_2024, 2024)
+
+# Combine all the data
+all_data <- bind_rows(data_2016, data_2020, data_2024)
+
+# Select relevant columns and clean the table
+final_table <- all_data %>%
+  select(year, symbol, adjusted, label) %>%
+  filter(!is.na(adjusted)) %>%  # Ensure no NA values for stock prices
+  spread(key = label, value = adjusted) %>%
+  arrange(year, symbol) %>%
+  mutate(
+    `Before Election` = round(`Before Election`, 2),
+    `After Election` = round(`After Election`, 2),
+    # Add an arrow column based on price change
+    'Price Change' = case_when(
+      `After Election` > `Before Election` ~ "↑",  # Green arrow for price increase
+      `After Election` < `Before Election` ~ "↓",  # Red arrow for price decrease
+      TRUE ~ "→"  # Arrow indicating no change
+    )
+  ) %>%
+  # Reorganize columns to show "Before Election" first
+  select(year, symbol, `Before Election`, `After Election`, 'Price Change')
+
+# Display the table
+kable(final_table, caption = "FAANG Stock Prices for One Trading Day Before and After the Election (2016, 2020, and 2024)")
+
+```
+This post-election stock behavior suggests that broader market reactions to election outcomes may have impacted stock prices significantly, particularly towards the end of the election year. Given this, it is likely that the increase in stock prices in late 2024 contributed to the predicted stock price trends in our model. As our model leverages historical data and trends, including fluctuations in stock prices towards the end of 2024, this surge likely influenced the final predictions, making them more optimistic and reflecting the strong market response post-election. This potential influence should be considered when interpreting the results, as it emphasizes the role of market sentiment and external factors that may cause sharp fluctuations in stock prices, beyond the intrinsic factors captured by the model.
+
+
+
+
+
+
 
 \newpage
 
