@@ -212,7 +212,7 @@ Where:
 - $\hat{y}_i$ is the predicted adjusted closing price for the stock on day $i$ in December 2024.
 - $X_i$ includes the same features as the November model, but with data up to November 30, 2024.
 
-The December model is trained using the same XGBoost parameters as the November model. Once trained, the model will generate predictions for December 2024, leveraging the latest market conditions reflected in the training data.
+The December model is trained using the same XGBoost parameters as the November model. Once trained, the model will generate predictions for December 2024, leveraging the latest market conditions reflected in the training data. 
 
 The assumptions and model design are consistent with the November model, with the key differences being the updated data and the forecast period. By training separate models for November and December, we can capture any evolving trends or shifts in stock price behavior as we approach the end of 2024.
 
@@ -239,8 +239,10 @@ The XGBoost model is the most suitable approach for forecasting FAANG stock pric
 While simpler models like linear regression could be used, they would fail to capture the complexity and non-linearity inherent in financial data. Machine learning techniques like random forests or support vector machines could also provide robust predictions, but XGBoost’s combination of accuracy, speed, and interpretability makes it the best choice for this analysis. Ultimately, XGBoost’s ability to learn from the data and adjust to market conditions enhances its suitability for predicting FAANG stock prices in an uncertain and volatile market environment.
 
 
-
 # Results
+
+Using the models trained on historical data, we applied the XGBoost algorithm to predict the adjusted closing prices for each of the FAANG stocks during these two months. For November, we filtered the data from November 1st to 30th, 2024, and prepared the relevant features for prediction, including lagged prices, rolling means, and volatility indicators. Since we have the actual adjusted closing prices for November, we compare the predicted values with the actual data to evaluate model performance. For December, the same approach was applied to the data from December 1st to 31st, 2024, but since the actual prices for this month are unavailable, the results for December focus solely on the predicted values.
+
 ```{r}
 # Filter November data for prediction
 nov_test <- analysis_data %>%
@@ -306,6 +308,8 @@ ggplot(nov_results, aes(x = as.Date(date))) +
     axis.text.x = element_text(angle = 45, hjust = 1)
   )
 ```
+The following figure presents the comparison of actual versus predicted stock prices for the FAANG companies during November 2024. For each company—Apple (AAPL), Amazon (AMZN), Meta (META), Netflix (NFLX), and Google (GOOGL)—we plot the actual adjusted closing prices (in blue) alongside the predicted values (in red). The predictions, derived from our XGBoost models, demonstrate a generally strong alignment with the observed stock price movements, particularly for AAPL and META, where the predicted prices closely follow the actual trends. However, for companies like NFLX, the predicted values show a less consistent match, especially later in the month. This discrepancy suggests that while the model captures major trends effectively, there may be some volatility or market events that were not fully accounted for in the prediction process. These visualizations help assess the performance of our models and highlight areas where the predictions are robust as well as where there is room for improvement.
+
 
 ## Heatmap of Prediction Errors (November 2024)
 ```{r}
@@ -335,6 +339,9 @@ ggplot(melt(nov_heatmap_data, id.vars = "date"), aes(x = date, y = variable, fil
     text = element_text(size = 12)
   )
 ```
+The heatmap of prediction errors for November 2024 highlights the discrepancies between the predicted and actual stock prices for each FAANG company on a daily basis. The color intensity, ranging from light pink to deep red, indicates the magnitude of the errors, with darker shades representing higher errors. Notably, the Netflix (NFLX) stock shows consistently higher errors throughout November, particularly on November 4th and November 11th, where the error values reach above 100, as indicated by the deeper red color. Meta (META) and Google (GOOGL) exhibit moderate errors, with values peaking around November 11th but staying relatively consistent compared to NFLX. In contrast, Amazon (AMZN) and Apple (AAPL) show smaller error values, especially in the first half of the month, where the colors are much lighter. This heatmap provides a clear view of which stocks and dates the model struggled with the most, offering insights into potential areas for further model improvement.
+
+
 
 ## Average Predicted Stock Price - November
 ```{r}
@@ -361,10 +368,12 @@ ggplot(nov_avg_prices, aes(x = symbol, y = avg_predicted_price, fill = symbol)) 
   scale_fill_brewer(palette = "Set2")
 
 ```
-
-
+The bar chart above illustrates the average predicted stock prices for each FAANG company in November 2024. The predictions reveal significant variations across the companies, with Netflix (NFLX) showing the highest predicted average price, approximately **$600**, followed by Meta (**'META'**) with an average just above **$500**. In contrast, Apple (**'AAPL'**), Amazon (**'AMZN'**), and Google (**'GOOGL'**) exhibit considerably lower average predicted prices, with AAPL at around **$225**, AMZN at **$210**, and GOOGL at approximately **$180**. This visualization highlights the distinct predicted performance of each company, suggesting that Netflix is expected to outperform the others in terms of stock price in November 2024, based on our model’s predictions. These results provide a clear comparative overview of expected stock movements and serve as a foundation for further analysis of market trends in the upcoming months.
 
 ## Predicted Stock Price Trends - December
+
+The line chart above presents the predicted stock prices for each FAANG company throughout December 2024. The predicted prices for each stock exhibit a strikingly consistent slope, with no significant fluctuations or adjustments throughout the month. For example, Netflix (NFLX) shows a steady increase, while Apple (AAPL), Amazon (AMZN), and Google (GOOGL) display relatively flat predicted price trends. This consistent pattern suggests potential limitations in the model, as real-world stock prices are typically subject to more volatility and market dynamics that are not captured by this prediction. 
+
 ```{r}
 ggplot(dec_results, aes(x = as.Date(date), y = predicted_adjusted, color = symbol)) +
   geom_line(size = 1) +
@@ -381,8 +390,12 @@ ggplot(dec_results, aes(x = as.Date(date), y = predicted_adjusted, color = symbo
     axis.text.x = element_text(angle = 45, hjust = 1)
   )
 ```
+The lack of variability in the predictions may indicate that the model fails to account for potential market shifts, such as reactions to economic news, company announcements, or other external factors. Additionally, the absence of any sharp price movements could suggest that the model overly smooths the data, possibly due to the features used or the nature of the training data. These limitations highlight the importance of refining the model to incorporate broader market influences and improve its responsiveness to sudden changes in the stock market environment.
 
 ## Average Stock Prices Bar Chart - December
+
+
+
 ```{r}
 # Calculate average predicted prices for December
 dec_avg_prices <- dec_results %>%
@@ -407,6 +420,8 @@ ggplot(dec_avg_prices, aes(x = symbol, y = avg_predicted_price, fill = symbol)) 
   scale_fill_brewer(palette = "Set2")
 
 ```
+The bar chart above displays the average predicted stock prices for each FAANG company in December 2024. As shown, Netflix (NFLX) is expected to have the highest average predicted stock price, just above **$750**, followed by Meta (META) at approximately **$600**. In contrast, Apple (AAPL), Amazon (AMZN), and Google (GOOGL) show significantly lower predicted prices, with AAPL around **$250**, AMZN slightly lower, and GOOGL at just above **$200**. This suggests that, according to the model, Netflix is projected to continue outperforming other FAANG companies in terms of stock price. These predictions reflect market trends modeled from historical data, with a noticeable discrepancy between the higher-performing stocks and the others. The chart provides a comparative view of how each stock is expected to fare during December 2024, contributing to our understanding of potential market movements for the month.
+
 
 ## Average Predicted Stock Price - December
 
@@ -426,6 +441,8 @@ dec_avg_prices %>%
     format = "markdown"  # Output as markdown for readability
   )
 ```
+The table above presents the average predicted stock prices for each FAANG company in December 2024. According to the predictions, Netflix (NFLX) is expected to have the highest average stock price at **$887.84**, followed by Meta (META) with an average of **$574.92**. Apple (AAPL) is predicted to have an average stock price of **$235.37**, while Amazon (AMZN) and Google (GOOGL) are expected to have lower average prices, at **$207.93** and **$168.69**, respectively. These predicted values highlight significant variations across the FAANG companies, with Netflix forecasted to substantially outperform the others. This table offers a clear numerical summary of the expected market performance for each company, providing insights into potential market trends for December 2024.
+
 
 ## Combined November and December
 ```{r}
