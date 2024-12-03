@@ -385,12 +385,17 @@ ggplot(combined_results, aes(x = as.Date(date), y = predicted_adjusted, color = 
 ## Average Predicted Stock Prices for November and December 2024
 
 ```{r}
+# Calculate average predicted prices for November and December
+avg_predicted_prices <- combined_results %>%
+  group_by(symbol, month) %>%
+  summarize(avg_price = mean(predicted_adjusted, na.rm = TRUE), .groups = "drop")
+
 # Reorder the month factor so that "November" comes before "December"
 avg_predicted_prices <- avg_predicted_prices %>%
   mutate(month = factor(month, levels = c("November", "December")))
 
 # Plot with the updated order
-ggplot(avg_predicted_prices, aes(x = symbol, y = mean_price, fill = month)) +
+ggplot(avg_predicted_prices, aes(x = symbol, y = avg_price, fill = month)) +
   geom_bar(stat = "identity", position = "dodge") +
   scale_fill_manual(values = c("November" = "#F8766D", "December" = "#00BFC4")) +
   labs(
