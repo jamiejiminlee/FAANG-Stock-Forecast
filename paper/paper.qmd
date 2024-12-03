@@ -8,6 +8,7 @@ date: today
 date-format: long
 abstract: "This paper presents a predictive model for FAANG stock prices (Meta, Amazon, Apple, Netflix, and Google) during November and December 2024. Using historical stock price data from Yahoo Finance and an XGBoost regression framework, we estimate adjusted stock prices based on features such as lagged prices, moving averages, and volatility. Our findings indicate strong predictive accuracy for short-term trends in November, with predictions closely aligning with actual prices for stocks like AAPL and GOOGL. However, discrepancies, such as the underestimation of NFLX prices, highlight the impact of unique stock-specific dynamics. Predictions for December show a flat trajectory, potentially influenced by data limitations and post-election market sentiment. This analysis provides valuable insights into FAANG stock behavior during critical periods, equipping investors and policymakers to better understand market responses to external events like elections."
 format: pdf
+toc: true
 number-sections: true
 bibliography: references.bib
 ---
@@ -16,9 +17,7 @@ bibliography: references.bib
 #| include: false
 #| warning: false
 #| message: false
-#| include: false
-#| warning: false
-#| message: false
+
 
 library(tidyverse)
 library(ggplot2)
@@ -90,11 +89,7 @@ The constructed variables were engineered to enhance the model's predictive perf
 - **`sma_20`**: The 20-day simple moving average (SMA) of adjusted prices, reflecting medium-term price trends.
 - **`sma_50`**: The 50-day simple moving average of adjusted prices, providing insights into longer-term trends.
 - **`volatility`**: The 20-day rolling standard deviation of adjusted prices, capturing short-term price variability.
-- **`daily_return`**: The percentage change in adjusted closing prices relative to the previous day, calculated as:
-  $$
-  \text{daily_return} = \frac{\text{adjusted}}{\text{Lag_1}} - 1
-  $$
-  This variable normalizes price changes for comparability across time and stocks.
+- **`daily_return`**: The percentage change in adjusted closing prices relative to the previous day. This value is calculated by dividing the adjusted closing price by its value from the previous day and subtracting 1. This variable normalizes price changes, making them comparable across time and stocks.
 - **`symbol_encoded`**: A numeric encoding of the stock ticker symbol, allowing the categorical `symbol` variable to be included in the modeling process.
 
 ### Outcome Variable
@@ -234,6 +229,11 @@ While simpler models like linear regression could be used, they would fail to ca
 Using the models trained on historical data, we applied the XGBoost algorithm to predict the adjusted closing prices for each of the FAANG stocks during these two months. For November, we filtered the data from November 1st to 30th, 2024, and prepared the relevant features for prediction, including lagged prices, rolling means, and volatility indicators. Since we have the actual adjusted closing prices for November, we compare the predicted values with the actual data to evaluate model performance. For December, the same approach was applied to the data from December 1st to 31st, 2024, but since the actual prices for this month are unavailable, the results for December focus solely on the predicted values.
 
 ```{r}
+#| echo: false
+#| eval: true
+#| warning: false
+#| message: false
+
 # Filter November data for prediction
 nov_test <- analysis_data %>%
   filter(as.Date(date) >= as.Date("2024-11-01") & as.Date(date) <= as.Date("2024-11-30"))
@@ -255,6 +255,11 @@ nov_results <- nov_test %>%
 ```
 
 ```{r}
+#| echo: false
+#| eval: true
+#| warning: false
+#| message: false
+
 # Filter December data for prediction
 dec_test <- analysis_data %>%
   filter(as.Date(date) >= as.Date("2024-12-01") & as.Date(date) <= as.Date("2024-12-31"))
@@ -551,9 +556,16 @@ The December model's predictions revealed a flat trajectory across all stocks, h
 Further model diagnostics, including feature importance evaluations and residual analysis, are provided in the [Appendix @sec-model-details]. 
 
 ## US Election Effects
-The table illustrates the stock prices of FAANG companies one trading day before and after the elections for the years 2016, 2020, and 2024. The post-election period often shows noticeable fluctuations in stock prices, with some stocks experiencing a sharp increase and others a decrease. For example, AAPL saw a slight increase in 2016 and 2020, while AMZN and NFLX both exhibited declines in 2016. In contrast, the 2024 data reveals an overall upward trend across all FAANG stocks, with particularly strong gains for NFLX, which rose from $755.51 before the election to $780.21 after the election, reflecting a surge in stock prices.
+
+@tbl-election-effect illustrates the stock prices of FAANG companies one trading day before and after the elections for the years 2016, 2020, and 2024. The post-election period often shows noticeable fluctuations in stock prices, with some stocks experiencing a sharp increase and others a decrease. For example, AAPL saw a slight increase in 2016 and 2020, while AMZN and NFLX both exhibited declines in 2016. In contrast, the 2024 data reveals an overall upward trend across all FAANG stocks, with particularly strong gains for NFLX, which rose from $755.51 before the election to $780.21 after the election, reflecting a surge in stock prices.
 
 ```{r}
+#| echo: false
+#| eval: true
+#| label: tbl-election-effect
+#| tbl-cap: "FAANG Stock Prices for One Trading Day Before and After the Election (2016, 2020, and 2024)"
+#| warning: false
+
 library(tidyquant)
 library(dplyr)
 library(tidyr)
@@ -619,7 +631,7 @@ final_table <- all_data %>%
   select(year, symbol, `Before Election`, `After Election`, 'Price Change')
 
 # Display the table
-kable(final_table, caption = "FAANG Stock Prices for One Trading Day Before and After the Election (2016, 2020, and 2024)")
+kable(final_table)
 
 ```
 This post-election stock behavior suggests that broader market reactions to election outcomes may have impacted stock prices significantly, particularly towards the end of the election year. Given this, it is likely that the increase in stock prices in late 2024 contributed to the predicted stock price trends in our model. As our model leverages historical data and trends starting from 2020, including fluctuations in stock prices towards the end of 2024, this surge likely influenced the final predictions, making them more optimistic and reflecting the strong market response post-election. This potential influence should be considered when interpreting the results, as it emphasizes the role of market sentiment and external factors that may cause sharp fluctuations in stock prices, beyond the intrinsic factors captured by the model.
@@ -638,51 +650,8 @@ This post-election stock behavior suggests that broader market reactions to elec
 
 ## Posterior predictive check
 
-In @fig-ppcheckandposteriorvsprior-1 we implement a posterior predictive check. This shows...
-
-In @fig-ppcheckandposteriorvsprior-2 we compare the posterior with the prior. This shows... 
-
-```{r}
-#| eval: true
-#| echo: false
-#| message: false
-#| warning: false
-#| label: fig-ppcheckandposteriorvsprior
-#| layout-ncol: 2
-#| fig-cap: "Examining how the model fits, and is affected by, the data"
-#| fig-subcap: ["Posterior prediction check", "Comparing the posterior with the prior"]
-
-pp_check(first_model) +
-  theme_classic() +
-  theme(legend.position = "bottom")
-
-posterior_vs_prior(first_model) +
-  theme_minimal() +
-  scale_color_brewer(palette = "Set1") +
-  theme(legend.position = "bottom") +
-  coord_flip()
-```
 
 ## Diagnostics
-
-@fig-stanareyouokay-1 is a trace plot. It shows... This suggests...
-
-@fig-stanareyouokay-2 is a Rhat plot. It shows... This suggests...
-
-```{r}
-#| echo: false
-#| eval: true
-#| message: false
-#| warning: false
-#| label: fig-stanareyouokay
-#| fig-cap: "Checking the convergence of the MCMC algorithm"
-#| fig-subcap: ["Trace plot", "Rhat plot"]
-#| layout-ncol: 2
-
-plot(first_model, "trace")
-
-plot(first_model, "rhat")
-```
 
 
 
