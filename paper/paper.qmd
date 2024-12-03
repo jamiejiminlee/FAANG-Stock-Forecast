@@ -452,6 +452,9 @@ combined_results <- bind_rows(
   dec_results %>% mutate(month = "December")
 )
 
+# Ensure November comes first in the legend
+combined_results$month <- factor(combined_results$month, levels = c("November", "December"))
+
 # Plot predicted prices with facets for each stock
 ggplot(combined_results, aes(x = as.Date(date), y = predicted_adjusted, color = month)) +
   geom_line(size = 1) +
@@ -470,7 +473,9 @@ ggplot(combined_results, aes(x = as.Date(date), y = predicted_adjusted, color = 
   )
 
 
+
 ```
+The line chart above illustrates the predicted stock prices for each FAANG company across November and December 2024. The predictions are shown for both months, with the November predictions represented by the teal lines and the December predictions shown in red. For companies like Apple (AAPL) and Meta (META), the model predicts a notable increase in stock prices during November, followed by a flat trend throughout December, indicating minimal movement in the predicted prices during the second month. In contrast, for Netflix (NFLX), the predicted stock price remains almost flat through both months, showing limited variation. Amazon (AMZN) and Google (GOOGL) exhibit more fluctuations in November, with predicted prices stabilizing into flat trends for December. This pattern highlights a potential limitation of the model, as it fails to capture significant market dynamics or volatility in December, suggesting that the model may not fully account for market influences or external factors that could impact stock prices at the end of the year.
 
 
 ## Average Predicted Stock Prices for November and December 2024
