@@ -9,44 +9,34 @@
 # Any other information needed? Make sure you are in the `starter_folder` rproj
 
 
-#### Workspace setup ####
-library(tidyverse)
-set.seed(853)
+# Libraries
+library(dplyr)
+library(lubridate)
 
+# Set random seed for reproducibility
+set.seed(42)
 
-#### Simulate data ####
-# State names
-states <- c(
-  "New South Wales",
-  "Victoria",
-  "Queensland",
-  "South Australia",
-  "Western Australia",
-  "Tasmania",
-  "Northern Territory",
-  "Australian Capital Territory"
-)
+# Parameters for simulation
+symbols <- c("FB", "AMZN", "AAPL", "NFLX", "GOOGL")  # FAANG symbols
+start_date <- as.Date("2024-12-01")
+end_date <- as.Date("2024-12-31")
+dates <- seq.Date(start_date, end_date, by = "day")  # Dates for December 2024
 
-# Political parties
-parties <- c("Labor", "Liberal", "Greens", "National", "Other")
+# Simulate stock price data for each symbol
+simulated_data <- expand.grid(date = dates, symbol = symbols) %>%
+  arrange(symbol, date) %>%
+  group_by(symbol) %>%
+  mutate(
+    # Simulate adjusted close price with a random walk process
+    adjusted = cumprod(1 + rnorm(n(), mean = 0, sd = 0.02)) * 100,  # Starting at 100, random walk with 2% daily volatility
+    # Simulate daily return
+    daily_return = c(NA, diff(adjusted) / adjusted[-length(adjusted)])
+  ) %>%
+  ungroup()
 
-# Create a dataset by randomly assigning states and parties to divisions
-analysis_data <- tibble(
-  division = paste("Division", 1:151),  # Add "Division" to make it a character
-  state = sample(
-    states,
-    size = 151,
-    replace = TRUE,
-    prob = c(0.25, 0.25, 0.15, 0.1, 0.1, 0.1, 0.025, 0.025) # Rough state population distribution
-  ),
-  party = sample(
-    parties,
-    size = 151,
-    replace = TRUE,
-    prob = c(0.40, 0.40, 0.05, 0.1, 0.05) # Rough party distribution
-  )
-)
-
+# View the simulated data
+head(simulated_data)
 
 #### Save data ####
 write_csv(analysis_data, "data/00-simulated_data/simulated_data.csv")
+
