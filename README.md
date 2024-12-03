@@ -8,7 +8,7 @@ This repo documents the steps and processes used in creating the paper "Predicti
 
 The repo is structured as:
 
--   `data/raw_data` contains the raw data as obtained from "National: President: General Election: 2024 Polls | FiveThirtyEight".
+-   `data/raw_data` contains the raw data as obtained from Yahoo Finance API.
 -   `data/analysis_data` contains the cleaned dataset that was constructed.
 -   `model` contains fitted models for both candidates. 
 -   `other` contains survey file, details about LLM chat interactions, and sketches.
