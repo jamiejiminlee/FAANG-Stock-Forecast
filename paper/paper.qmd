@@ -42,67 +42,71 @@ Telegraphing paragraph: The remainder of this paper is structured as follows. @s
 
 # Data {#sec-data}
 
-## Overview
 
-We use the statistical programming language R [@citeR].... Our data [@shelter].... Following @tellingstories, we consider...
+## Data Overview
 
-Overview text
+This analysis uses historical stock price data for FAANG companies (Meta, Amazon, Apple, Netflix, and Google) obtained from the Yahoo Finance API via the `tidyquant` library in R on November 30, 2024. The dataset spans from January 1, 2020, to December 31, 2024, providing daily records of stock performance, including key metrics such as opening, high, low, and closing prices, trading volume, and adjusted closing prices normalized for corporate actions. To enhance the predictive power of the data, several derived features were constructed. These include lagged adjusted prices to capture sequential trends, daily returns to measure proportional changes, rolling averages to smooth short- and long-term fluctuations, and a rolling standard deviation of prices to quantify market volatility. These features offer a structured framework for identifying patterns and forecasting future stock movements.
+
+The raw data underwent preprocessing to address missing values, particularly for adjusted prices. Missing entries were filled using forward and backward imputation to ensure data continuity. Placeholder dates for December 2024 were interpolated to prepare for out-of-sample predictions. The cleaned dataset, prepared using the `tidyverse`, `lubridate`, `TTR`, and `arrow` libraries, provides a consistent and comprehensive foundation for modeling and analysis.
+
+Further details on the data preparation process are included in [Appendix -@sec-data-cleaning].
 
 ## Measurement
-	
-Some paragraphs about how we go from a phenomena in the world to an entry in the dataset.
+Stock price data encapsulates market dynamics influenced by diverse factors, including macroeconomic conditions, corporate events, and investor sentiment. The raw variables in this dataset, such as **`open`**, **`high`**, **`low`**, **`close`**, and **`adjusted`**, capture key price points and provide a snapshot of market activity for each trading day. However, while these variables accurately reflect daily trading outcomes, they may not fully represent intraday fluctuations or complex trading dynamics.
 
-## Outcome variables
+Constructed variables enhance the analytical depth of the dataset by quantifying sequential trends, price variability, and momentum. For instance, **`Lag_1`** captures the adjusted closing price from the previous trading day, providing context for sequential patterns. Variables like **`daily_return`** measure proportional daily changes in price, while moving averages such as **`Rolling_Mean_7`**, **`sma_20`**, and **`sma_50`** smooth short- and long-term price fluctuations, offering a clearer view of overall trends. Additionally, **`volatility`**, computed as the rolling standard deviation of closing prices, quantifies recent price variability and reflects market uncertainty.
 
-Add graphs, tables and text. Use sub-sub-headings for each outcome variable or update the subheading to be singular.
+Market activity is further contextualized through **`volume`**, representing the total shares traded daily, a proxy for investor interest and liquidity. The inclusion of **`symbol_encoded`**, a numerical encoding of stock tickers, standardizes categorical data for compatibility with machine learning models. Together, these features create a robust framework for analysis, balancing raw price data with derived metrics that highlight market trends and dynamics.
+
+Despite the strengths of these variables, limitations exist. Raw price points do not account for intraday variations, while constructed metrics may oversimplify complex market behaviors. External shocks, such as economic crises or regulatory changes, may not be fully captured within the variables’ scope. Acknowledging these constraints is essential for interpreting the results and understanding the broader context of the analysis. These limitations are further discussed in {@sec-data-details}. 
 
 
+## Variables
 
-Some of our data is of penguins (@fig-bills), from @palmerpenguins.
+The dataset used for this analysis includes both original and constructed variables, designed to capture temporal trends, volatility, and momentum in stock price movements. Below is a detailed overview of the variables included in the model:
 
-```{r}
-#| label: fig-bills
-#| fig-cap: Bills of penguins
-#| echo: false
+### Original Variables
+The original variables directly obtained from the raw stock price data are:
 
-ggplot(penguins, aes(x = island, fill = species)) +
-  geom_bar(alpha = 0.8) +
-  scale_fill_manual(values = c("darkorange","purple","cyan4"),
-                    guide = "none") +
-  theme_minimal() +
-  facet_wrap(~species, ncol = 1) +
-  coord_flip()
-```
+- **`symbol`**: The stock ticker symbol identifying the company (e.g., AAPL for Apple, AMZN for Amazon).
+- **`date`**: The trading date, essential for analyzing time-series trends.
+- **`open`**: The stock’s opening price for the trading day, indicating initial market conditions.
+- **`high`**: The highest price reached during the trading day, reflecting intraday volatility.
+- **`low`**: The lowest price during the trading day, reflecting downward market trends.
+- **`close`**: The stock’s unadjusted closing price, representing the final value at the end of trading.
+- **`volume`**: The total number of shares traded during the day, reflecting market activity.
+- **`adjusted`**: The closing price adjusted for corporate actions such as splits or dividends, ensuring consistency for trend analysis.
 
-Talk more about it.
+### Constructed Variables
+The constructed variables were engineered to enhance the model's predictive performance by capturing price trends, volatility, and momentum:
 
-And also planes (@fig-planes). (You can change the height and width, but don't worry about doing that until you have finished every other aspect of the paper - Quarto will try to make it look nice and the defaults usually work well once you have enough text.)
+- **`Lag_1`**: The closing price from the previous trading day, derived using the `lag()` function. This variable captures sequential patterns in stock prices.
+- **`Rolling_Mean_7`**: A 7-day moving average of adjusted closing prices, computed using the `rollmean()` function. This variable smooths short-term fluctuations to highlight weekly trends.
+- **`sma_20`**: The 20-day simple moving average (SMA) of adjusted prices, reflecting medium-term price trends.
+- **`sma_50`**: The 50-day simple moving average of adjusted prices, providing insights into longer-term trends.
+- **`volatility`**: The 20-day rolling standard deviation of adjusted prices, capturing short-term price variability.
+- **`daily_return`**: The percentage change in adjusted closing prices relative to the previous day, calculated as:
+  $$
+  \text{daily_return} = \frac{\text{adjusted}}{\text{Lag_1}} - 1
+  $$
+  This variable normalizes price changes for comparability across time and stocks.
+- **`symbol_encoded`**: A numeric encoding of the stock ticker symbol, allowing the categorical `symbol` variable to be included in the modeling process.
 
-```{r}
-#| label: fig-planes
-#| fig-cap: Relationship between wing length and width
-#| echo: false
-#| warning: false
-#| message: false
+### Outcome Variable
+The **outcome variable** for this analysis is the **adjusted closing price (`adjusted`)**, which serves as the target for prediction. This represents the stock's closing price adjusted for corporate actions like stock splits or dividends, providing a normalized measure of stock value. The model aims to predict this variable based on historical data and constructed predictors.
 
-analysis_data <- read_csv(here::here("data/02-analysis_data/analysis_data.csv"))
 
-analysis_data |> 
-  ggplot(aes(x = width, y = length)) +
-  geom_point(alpha = 0.8) +
-  theme_minimal() +
-  labs(x = "Wing width (mm)",
-       y = "Wing length (mm)")
-```
+### Predictor Variables
+The predictor variables used to model the adjusted closing price are:
 
-Talk way more about it. 
+- **`Lag_1`**: The prior day's adjusted closing price, reflecting momentum.
+- **`Rolling_Mean_7`**: A smoothed metric capturing weekly price trends.
+- **`sma_20`** and **`sma_50`**: Simple moving averages representing medium- and long-term price trends.
+- **`volatility`**: The short-term price variability, highlighting potential risks.
+- **`daily_return`**: The normalized daily percentage price change.
+- **`symbol_encoded`**: A numerical representation of the stock ticker symbol, capturing company-level differences.
 
-## Predictor variables
-
-Add graphs, tables and text.
-
-Use sub-sub-headings for each outcome variable and feel free to combine a few into one if they go together naturally.
-
+Together, these variables provide a robust framework for understanding and predicting stock price movements over time, leveraging both raw market indicators and derived metrics.
 
 
 
