@@ -1,10 +1,9 @@
 ---
-title: "My title"
+title: "Predicting FAANG Stock Prices: A Data-Driven Approach Using Machine Learning Models"
 subtitle: "My subtitle if needed"
 author: 
-  - First author
-  - Another author
-thanks: "Code and data are available at: [https://github.com/RohanAlexander/starter_folder](https://github.com/RohanAlexander/starter_folder)."
+  - Jimin (Jamie) Lee
+thanks: "Code and data are available at: https://github.com/jamiejiminlee/FAANG-Stock-Forecast.git."
 date: today
 date-format: long
 abstract: "First sentence. Second sentence. Third sentence. Fourth sentence."
@@ -17,9 +16,21 @@ bibliography: references.bib
 #| include: false
 #| warning: false
 #| message: false
+#| include: false
+#| warning: false
+#| message: false
 
 library(tidyverse)
-library(palmerpenguins)
+library(ggplot2)
+library(arrow)
+library(kableExtra)
+library(xgboost)
+library(tidyr)
+library(zoo)
+library(scales)
+library(reshape2)
+
+analysis_data <- read_parquet("/Users/jamielee/TechStockForecast/data/02-analysis_data/analysis_data.parquet")
 ```
 
 
@@ -135,6 +146,18 @@ y_i|\mu_i, \sigma &\sim \mbox{Normal}(\mu_i, \sigma) \\
 
 We run the model in R [@citeR] using the `rstanarm` package of @rstanarm. We use the default priors from `rstanarm`.
 
+```{r}
+#| echo: false
+#| eval: true
+#| warning: false
+#| message: false
+
+library(xgboost)
+
+nov_model <- readRDS("/Users/jamielee/TechStockForecast/models/nov_model.rds")
+dec_model <- readRDS("/Users/jamielee/TechStockForecast/models/dec_model.rds")
+
+```
 
 ### Model justification
 
@@ -144,35 +167,238 @@ We can use maths by including latex between dollar signs, for instance $\theta$.
 
 
 # Results
-
-Our results are summarized in @tbl-modelresults.
-
 ```{r}
-#| echo: false
-#| eval: true
-#| warning: false
-#| message: false
+# Filter November data for prediction
+nov_test <- analysis_data %>%
+  filter(as.Date(date) >= as.Date("2024-11-01") & as.Date(date) <= as.Date("2024-11-30"))
 
-library(rstanarm)
+# Prepare testing features for November
+X_test_nov <- nov_test %>%
+  select(Lag_1, Rolling_Mean_7, sma_20, sma_50, volatility, daily_return, symbol_encoded) %>%
+  as.matrix()
 
-first_model <-
-  readRDS(file = here::here("models/first_model.rds"))
+# Predict November prices
+dtest_nov <- xgb.DMatrix(data = X_test_nov)
+nov_predictions <- predict(nov_model, dtest_nov)
+
+# Combine predictions with actual November data
+nov_results <- nov_test %>%
+  mutate(predicted_adjusted = nov_predictions) %>%
+  select(date, symbol, adjusted, predicted_adjusted)
+
 ```
 
 ```{r}
-#| echo: false
-#| eval: true
-#| label: tbl-modelresults
-#| tbl-cap: "Explanatory models of flight time based on wing width and wing length"
-#| warning: false
+# Filter December data for prediction
+dec_test <- analysis_data %>%
+  filter(as.Date(date) >= as.Date("2024-12-01") & as.Date(date) <= as.Date("2024-12-31"))
 
-modelsummary::modelsummary(
-  list(
-    "First model" = first_model
-  ),
-  statistic = "mad",
-  fmt = 2
+# Prepare testing features for December
+X_test_dec <- dec_test %>%
+  select(Lag_1, Rolling_Mean_7, sma_20, sma_50, volatility, daily_return, symbol_encoded) %>%
+  as.matrix()
+
+# Predict December prices
+dtest_dec <- xgb.DMatrix(data = X_test_dec)
+dec_predictions <- predict(dec_model, dtest_dec)
+
+# Combine predictions with actual December data
+dec_results <- dec_test %>%
+  mutate(predicted_adjusted = dec_predictions) %>%
+  select(date, symbol, predicted_adjusted)
+
+```
+
+
+## Actual vs Predicted for November 2024
+```{r}
+
+# Plot actual vs predicted prices for November 2024
+ggplot(nov_results, aes(x = as.Date(date))) +
+  geom_line(aes(y = adjusted, color = "Actual"), size = 1) +  # Actual prices
+  geom_line(aes(y = predicted_adjusted, color = "Predicted"), linetype = "dashed", size = 1) +  # Predicted prices
+  facet_wrap(~symbol, scales = "free_y") +  # Separate panels for each stock
+  labs(
+    title = "Actual vs Predicted Stock Prices for November 2024",
+    x = "Date",
+    y = "Stock Price",
+    color = "Legend"
+  ) +
+  scale_color_manual(values = c("Actual" = "blue", "Predicted" = "red")) +  # Define colors
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    text = element_text(size = 12),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+```
+
+## Heatmap of Prediction Errors (November 2024)
+```{r}
+# Add the `error` column to `nov_results`
+nov_results <- nov_results %>%
+  mutate(error = abs(adjusted - predicted_adjusted))  # Calculate absolute error
+
+
+# Prepare data for heatmap
+nov_heatmap_data <- nov_results %>%
+  select(date, symbol, error) %>%
+  spread(symbol, error)
+
+# Plot heatmap of prediction errors
+ggplot(melt(nov_heatmap_data, id.vars = "date"), aes(x = date, y = variable, fill = value)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0) +
+  labs(
+    title = "Heatmap of Prediction Errors for November 2024",
+    x = "Date",
+    y = "Stock Symbol",
+    fill = "Error"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    text = element_text(size = 12)
+  )
+```
+
+## Average Predicted Stock Price - November
+```{r}
+# Calculate average predicted prices for November
+nov_avg_prices <- nov_results %>%
+  group_by(symbol) %>%
+  summarize(avg_predicted_price = mean(predicted_adjusted, na.rm = TRUE))
+
+# Plot average predicted prices
+ggplot(nov_avg_prices, aes(x = symbol, y = avg_predicted_price, fill = symbol)) +
+  geom_bar(stat = "identity", width = 0.6) +
+  labs(
+    title = "Average Predicted Stock Prices for November 2024",
+    x = "Stock Symbol",
+    y = "Average Predicted Price",
+    fill = "Stock Symbol"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    text = element_text(size = 12),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  ) +
+  scale_fill_brewer(palette = "Set2")
+
+```
+
+
+
+## Predicted Stock Price Trends - December
+```{r}
+ggplot(dec_results, aes(x = as.Date(date), y = predicted_adjusted, color = symbol)) +
+  geom_line(size = 1) +
+  labs(
+    title = "Predicted Stock Price Trends for December 2024",
+    x = "Date",
+    y = "Predicted Stock Price",
+    color = "Stock Symbol"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    text = element_text(size = 12),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+```
+
+## Average Stock Prices Bar Chart - December
+```{r}
+# Calculate average predicted prices for December
+dec_avg_prices <- dec_results %>%
+  group_by(symbol) %>%
+  summarize(avg_predicted_price = mean(predicted_adjusted, na.rm = TRUE))
+
+# Plot average predicted prices
+ggplot(dec_avg_prices, aes(x = symbol, y = avg_predicted_price, fill = symbol)) +
+  geom_bar(stat = "identity", width = 0.6) +
+  labs(
+    title = "Average Predicted Stock Prices for December 2024",
+    x = "Stock Symbol",
+    y = "Average Predicted Price",
+    fill = "Stock Symbol"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    text = element_text(size = 12),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  ) +
+  scale_fill_brewer(palette = "Set2")
+
+```
+
+## Average Predicted Stock Price - December
+
+```{r}
+# Calculate average predicted price for December
+dec_avg_prices <- dec_results %>%
+  group_by(symbol) %>%
+  summarize(avg_predicted_price = mean(predicted_adjusted, na.rm = TRUE)) %>%
+  mutate(avg_predicted_price = dollar(round(avg_predicted_price, 2))) %>%  # Format as dollar and round
+  arrange(desc(avg_predicted_price))  # Sort by average price in descending order
+
+# Display the table
+dec_avg_prices %>%
+  kable(
+    caption = "Average Predicted Stock Prices for December 2024",
+    col.names = c("Stock Symbol", "Average Predicted Price"),
+    format = "markdown"  # Output as markdown for readability
+  )
+```
+
+## Combined November and December
+```{r}
+# Combine November and December results
+combined_results <- bind_rows(
+  nov_results %>% mutate(month = "November"),
+  dec_results %>% mutate(month = "December")
 )
+
+# Plot predicted prices with facets for each stock
+ggplot(combined_results, aes(x = as.Date(date), y = predicted_adjusted, color = month)) +
+  geom_line(size = 1) +
+  facet_wrap(~symbol, scales = "free_y") +
+  labs(
+    title = "Predicted Stock Prices for November and December 2024",
+    x = "Date",
+    y = "Predicted Stock Price",
+    color = "Month"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    text = element_text(size = 12),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+
+```
+
+
+## Average Predicted Stock Prices for November and December 2024
+
+```{r}
+# Reorder the month factor so that "November" comes before "December"
+avg_predicted_prices <- avg_predicted_prices %>%
+  mutate(month = factor(month, levels = c("November", "December")))
+
+# Plot with the updated order
+ggplot(avg_predicted_prices, aes(x = symbol, y = mean_price, fill = month)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_manual(values = c("November" = "#F8766D", "December" = "#00BFC4")) +
+  labs(
+    title = "Average Predicted Stock Prices for November and December 2024",
+    x = "Stock Symbol",
+    y = "Average Predicted Price (in USD)",
+    fill = "Month"
+  )
 ```
 
 
