@@ -167,7 +167,7 @@ analysis_data %>%
 
 ## Model Overview
 
-The XGBoost regression models in this study predict adjusted closing prices for FAANG stocks—Meta, Amazon, Apple, Netflix, and Google—for November and December 2024. Separate models are constructed for each month to account for time-specific market dynamics and recent trends. To capture short and long-term trends in stock price movements, these models incorporate features such as lagged prices, moving averages, daily returns, and volatility. Training data is segmented by timeframe, with the November model using data up to October 31, 2024, and the December model using data through November 30, 2024. Temporal features and technical indicators enable the models to capture stock-specific volatility and broader market trends. Further details on model specifications and diagnostics are provided in [Appendix -@sec-model-details].
+The XGBoost regression models in this study predict adjusted closing prices for FAANG stocks (Meta, Amazon, Apple, Netflix, and Google) for November and December 2024. Separate models are constructed for each month to account for time-specific market dynamics and recent trends. To capture short and long-term trends in stock price movements, these models incorporate features such as lagged prices, moving averages, daily returns, and volatility. Training data is segmented by timeframe, with the November model using data up to October 31, 2024, and the December model using data through November 30, 2024. Temporal features and technical indicators enable the models to capture stock-specific volatility and broader market trends. Further details on model specifications and diagnostics are provided in [Appendix -@sec-model-details].
 
 ## Model Assumptions
 
@@ -591,7 +591,24 @@ The December model's predictions revealed a flat trajectory across all stocks, h
 
 Further model diagnostics, including feature importance evaluations and residual analysis, are provided in the [Appendix @sec-model-diagnostics]. 
 
-## US Election Effects
+## Real-World Implications
+
+The predictive insights from this analysis hold significant value for investors, policymakers, and analysts, as FAANG stocks (Meta, Amazon, Apple, Netflix, Google) serve as key indicators of economic health and technological trends. Accurate stock price predictions enable informed decision-making in several areas:
+
+1. **Investment Strategies**: Anticipating price trends helps investors optimize portfolios. For instance, the predicted December 2024 price stability may guide conservative allocations or sector diversification.
+
+2. **Economic Forecasting**: FAANG performance offers insights into consumer behavior, innovation cycles, and macroeconomic conditions, aiding policymakers in evaluating sectoral resilience.
+
+3. **Risk Management**: Understanding volatility supports effective hedging strategies during high-risk periods, such as earnings reports or economic announcements.
+
+4. **Tech Sector Analysis**: Predictions inform strategic decisions for tech-driven businesses, highlighting market expectations for ad-reliant firms like Meta and Google or streaming services like Netflix.
+
+5. **Behavioral Insights**: Stock price trends reflect investor sentiment and external factors, emphasizing the need to integrate qualitative drivers, like trust in technology, into market models.
+
+These applications demonstrate the practical utility of FAANG stock predictions in navigating dynamic market environments and making data-driven decisions.
+
+### US Election Effect
+A critical component of stock market behavior is its sensitivity to major political events, such as U.S. presidential elections. These events often drive short-term volatility and influence investor sentiment, leading to measurable shifts in stock prices across sectors. Analyzing the performance of FAANG stocks before and after elections in 2016, 2020, and 2024 provides valuable insights into how market participants react to political outcomes and how these reactions shape price trajectories in the post-election period.
 
 @tbl-election-effect compares FAANG stock prices one trading day before and after the elections in 2016, 2020, and 2024. Post-election periods show noticeable fluctuations, with some stocks rising and others declining. For instance, AAPL experienced slight increases in 2016 and 2020, while AMZN and NFLX declined in 2016. In contrast, 2024 shows an overall upward trend across all FAANG stocks, with NFLX seeing the largest gain, rising from $755.51 to $780.21.
 ```{r}
@@ -718,9 +735,11 @@ By incorporating these features, the model is able to account for short-term flu
 ### Hyperparameters and Regularization
 
 The November and December models share key hyperparameters optimized to balance complexity and generalizability:
+
 - **Max depth**: Set to 6, allowing the model to capture significant interactions without overfitting.
 - **Learning rate**: Set to 0.1, ensuring gradual refinement of predictions.
 - **Boosting rounds**: Fixed at 100 to provide sufficient iterations for model convergence.
+
 XGBoost's built-in regularization techniques mitigate overfitting, especially important given the high-dimensional engineered features and the presence of missing values due to holidays and weekends.
 
 Unlike traditional time-series models such as ARIMA, which assume stationarity and often require extensive preprocessing, XGBoost directly handles non-stationary data. This flexibility makes it an ideal choice for stock price forecasting, where trends and volatility can vary significantly over time. Furthermore, XGBoost automatically handles missing data, making it robust for real-world applications with gaps in trading days. The decision to train separate models for November and December, coupled with XGBoost's ability to handle complex non-linearities, ensures that the forecasts reflect both temporal dependencies and evolving market dynamics. By balancing model flexibility and interpretability, the November and December XGBoost regression models provide a robust and reliable framework for predicting FAANG stock prices, tailored to the unique characteristics of each time period.
@@ -965,51 +984,26 @@ While the November and December XGBoost models demonstrate strong performance, s
 
 Addressing these limitations in future analysis, such as incorporating external data and improving the feature set to capture dynamic market behaviors, would enhance the robustness and applicability of the models.
 
+
 # Surveys, Sampling, and Observational Data
 
-## Nature of Observational Data
+## Current Analysis: Surveys, Sampling, and Observational Data
+
+### Nature of Observational Data
 
 The stock price data used in this study is observational, derived from naturally occurring financial transactions in the stock market. Unlike experimental or survey data, observational data reflects real-world behaviors influenced by external factors such as macroeconomic policies, geopolitical events, and investor sentiment. This complexity makes it challenging to distinguish causality from correlation, as unmeasured confounding variables can bias interpretations. For example, stock price movements during the 2024 U.S. Presidential Election may reflect both direct market reactions and broader economic conditions.
 
 While observational data offers a granular, high-frequency view of stock market dynamics, it relies entirely on historical trends as proxies for predictive features. This approach limits its ability to account for unprecedented shocks, such as global crises or election-related volatility, which may diverge from historical patterns. Furthermore, temporal dependence—where current prices are influenced by past values—requires careful feature engineering, such as lagged variables (Lag_1) and rolling averages (Rolling_Mean_7), to capture meaningful trends.
 
-## Sampling Frame and Representativeness
+### Sampling Frame and Representativeness
+
 The sampling frame encompasses all trading days from January 2020 to November 2024, providing a comprehensive record of FAANG stock activity during a period of significant market and political events. While this dataset ensures detailed coverage of the technology sector, it is constrained by its sector-specific focus, which limits generalizability to other industries or broader market trends.
 
-### Strengths and Weaknesses
+#### Strengths and Weaknesses
 
-A key strength of the dataset is its high-frequency nature, which allows the analysis to capture both short-term fluctuations and long-term trends. FAANG stocks, as market leaders, serve as valuable indicators of overall economic conditions and investor sentiment. However, the focus on a single sector introduces limitations in generalizability, as trends within technology stocks may not reflect behaviors across other industries. Furthermore, the imputation of placeholder prices for December 2024 ensures continuity but risks underestimating volatility, particularly in the context of post-election market adjustments.
+A key strength of the data is its high-frequency nature, which allows the analysis to capture both short-term fluctuations and long-term trends. FAANG stocks, as market leaders, serve as valuable indicators of overall economic conditions and investor sentiment. However, the focus on a single sector introduces limitations in generalizability, as trends within technology stocks may not reflect behaviors across other industries. Furthermore, the imputation of placeholder prices for December 2024 ensures continuity but risks underestimating volatility, particularly in the context of post-election market adjustments.
 
-## Integrating Surveys with Observational Data
-
-Surveys provide forward-looking indicators that enhance the interpretation of stock price trends. For example, during significant events like the 2024 U.S. Presidential Election, surveys could capture investor sentiment regarding anticipated market impacts, which may not yet be reflected in observed price movements.
-
-### Proposed Survey Design
-
-To complement the observational stock data, investor sentiment surveys could include questions such as:
-
-- **Market Confidence**: “Do you expect FAANG stock prices to increase, decrease, or remain stable over the next month?”
-- **Election Impact**: “How has the 2024 U.S. Presidential Election influenced your investment decisions?”
-- **Risk Appetite**: “What is your likelihood of investing in technology stocks in the current market climate?”
-
-### Methodological Considerations:
-
-- **Sampling and Representativeness**:  Stratify respondents by demographics, investment experience, and portfolio size to ensure diverse perspectives.
-- **Weighting**: Apply post-survey weighting to align survey demographics with actual investor populations, similar to post-stratification in traditional surveys.
-
-### Strengths and Limitations
-
-Advantages of Survey Integration:
-
-- **Contextualization**: Surveys can help interpret stock price trends, particularly around major events like elections.
-- **Predictive Power**: Sentiment data may improve model accuracy by capturing market expectations and behavioral drivers.
-
-Limitations of Survey Integration: 
-
-- **Response Bias**: Survey participants may exaggerate optimism or pessimism, especially during volatile periods.
-- **Sampling Complexity**: Ensuring representativeness across demographics, such as institutional vs. retail investors, requires significant resources and methodological rigor
-
-## Parallels Between Observational Data and Surveys
+### Parallels Between Observational Data and Surveys
 
 Observational stock data and surveys share structural similarities that make their integration intuitive and mutually reinforcing:
 
@@ -1018,22 +1012,112 @@ Observational stock data and surveys share structural similarities that make the
 - **Weighting**: Models could incorporate macroeconomic indicators, such as GDP or interest rates, as weights to adjust for external market influences, akin to post-stratification in surveys.
 
 
-## Addressing Data Challenges
+## Idealized Methodology for FAANG Stock Prediction
 
-- **Temporal Dependence**: Stock prices are influenced by past trends. To mitigate this, features such as lagged prices (Lag_1) and rolling averages (Rolling_Mean_7) were used to capture momentum and smoothed trends effectively. However, these features may miss sudden shifts caused by external shocks or policy changes.
+Building on the performance and limitations of our analysis, we now propose a robust framework for predicting FAANG stock prices by integrating observational data with investor sentiment surveys. The approach addresses limitations such as missing values, external confounders, and market volatility, incorporating best practices to ensure accurate, actionable predictions. It is designed to operate within a budget of $100,000.
 
-- **Imputation for Missing Data**: Missing December 2024 values were filled through interpolation to ensure continuity. While necessary for analysis, this approach may underestimate volatility or fail to account for post-election market adjustments. Advanced time-series models could improve the accuracy of such imputations.
+The link to our survey is as follows: "https://docs.google.com/forms/d/e/1FAIpQLScbhRrXNXA-70g6SplY8TcupSMQePFi3W6BbnwuAf1EQSrKJw/viewform?usp=sf_link"
 
-- **Observational Bias**: Stock data is inherently influenced by external confounders, such as Federal Reserve policies, geopolitical tensions, or major corporate announcements. These confounders obscure causal relationships. Future models could include external predictors to better account for such influences, improving robustness.
+### Target Population, Sampling Frame, and Sample
 
-## Recommendations for Future Work
+- **Target population**: Active retail investors who have traded FAANG stocks at least once in the past year. This group represents individuals most engaged with FAANG stock dynamics and whose sentiment provides actionable insights for predictive modeling.
+  
+- **Sampling frame**: A comprehensive list of active retail investors derived from brokerage datasets. The frame includes demographic details (e.g., age, income, gender), trading behavior (e.g., frequency of trades), and portfolio composition (e.g., FAANG stock exposure).
 
-1. **Survey Integration**: Combine investor sentiment surveys with stock data to capture qualitative dimensions of market behavior. Surveys can reveal forward-looking insights, such as investor confidence, that improve interpretability and predictive power.
-2. **Expanding Scope**: Extend the analysis to include sectors beyond FAANG stocks to enhance generalizability and uncover trends across diverse industries.
-3. **Improved Imputation**: Use dynamic time-series models to address missing values more accurately and capture volatility during critical events like elections or earnings announcements.
+- **Sample**: A stratified sample of 1,000 respondents is selected to ensure proportional representation across key dimensions, including age (e.g., 18–34, 35–54, 55+), income level, portfolio size, and trading frequency. This stratification ensures diversity and reliability in capturing investor sentiment.
 
-By addressing these challenges and integrating surveys with observational data, future analyses can achieve a richer, more nuanced understanding of market dynamics. Such hybrid approach provides a comprehensive framework for interpreting stock price trends, making predictions more robust and actionable, especially during periods of significant economic or political change.
 
+### Sampling Methodology & Justification
+
+The sampling methodology employs stratified random sampling to ensure representation across diverse investor demographics. Respondents are stratified along the following dimensions:
+
+1. **Demographics**: Age, gender, and income levels.  
+2. **Portfolio Characteristics**: Size of portfolios and proportion allocated to FAANG stocks.  
+3. **Trading Behavior**: Frequency of trades, distinguishing between high-frequency and occasional investors.
+
+Stratification ensures the sample mirrors the diversity within the broader investor population. This method enhances generalizability while maintaining cost efficiency. With a sample size of 1,000, the methodology balances statistical rigor with practical feasibility.
+
+
+
+### Survey Design
+
+The survey is structured to capture critical insights into investor sentiment, preferences, and behaviors influencing FAANG stock price movements. It focuses on key dimensions such as market confidence, risk appetite, and reactions to external events like the 2024 U.S. Presidential Election. Designed with clarity and brevity, the survey ensures high-quality responses by minimizing respondent fatigue through concise, well-phrased questions. It incorporates a mix of quantitative and qualitative metrics, allowing respondents to express the intensity of their opinions on a scale-based format, providing a nuanced understanding of market sentiment.
+
+Our survey design also accounts for inclusivity and accessibility by being optimized for desktop and mobile platforms. To ensure reliability, validation questions are included to identify inattentive responses, and demographic questions enable stratified analysis across investor types. By framing questions within realistic contexts, such as recent market events and hypothetical FAANG performance scenarios, the survey gathers actionable data that enhances the interpretability and predictive power of stock price models. This design bridges the gap between quantitative trends and investor psychology, offering a comprehensive tool for integrating sentiment into financial forecasting.
+
+#### Cost and Feasibility
+
+The methodology is designed to operate within a $100,000 budget:
+
+- **Survey Development and Distribution**: $50,000 for platform costs and participant incentives.
+- **Data Acquisition**: $30,000 for accessing brokerage datasets and sampling frames.  
+- **Analysis and Reporting**: $20,000 for data integration, modeling, and reporting.
+
+
+### Data Validation
+
+To ensure reliable and representative survey data, we employ the following:
+
+- **Weighting**: Adjust responses to reflect population proportions using the formula:  
+$$
+  \text{Weight} = \frac{\text{Population Proportion}}{\text{Sample Proportion}}
+$$
+  This corrects for over- or under-representation within the sample.  
+- **Validation Questions**: Include items like “Select ‘Agree’ from the options below” to identify inattentive responses.  
+- **Unique IDs**: Assign each respondent a unique ID to prevent duplicates, retaining only the first response.  
+- **Real-Time Monitoring**: Track responses in real time to identify potential inconsistencies or fraudulent submissions.
+
+
+
+### Integration with Observational Data
+
+Survey responses will be integrated with historical stock price data by mapping survey-derived sentiment metrics, such as market confidence and risk appetite, to relevant time periods in the stock price dataset. For example, survey responses collected during November and December 2024 will be linked to corresponding stock price data, allowing the models to incorporate real-time investor sentiment alongside historical price trends. These sentiment metrics will be treated as additional predictive features in the modeling framework, enabling the machine learning models to capture the relationship between investor expectations and subsequent stock price movements. For instance, metrics like market confidence will be aligned with price trends to evaluate whether periods of high investor optimism correlate with upward price movements. Similarly, risk appetite data will help contextualize market volatility and identify patterns during periods of uncertainty.
+
+By combining survey insights with lagged prices, rolling averages, and volatility measures from the historical data, the models will leverage both forward-looking sentiment and past market behavior to make more robust and actionable predictions. This integration bridges the gap between investor psychology and quantitative market analysis, enhancing the models' ability to forecast stock price dynamics during volatile or event-driven periods.
+
+### Survey Demo
+
+Full survey can be found at "https://docs.google.com/forms/d/e/1FAIpQLScbhRrXNXA-70g6SplY8TcupSMQePFi3W6BbnwuAf1EQSrKJw/viewform?usp=sf_link" and under `FAANG-Stock-Forecast/other/survey`
+
+**Title: "Investor Sentiment Survey for FAANG Stock Predictions"**
+
+#### Survey Introduction
+We are conducting an important survey to understand investor opinions and predict FAANG stock price movements. Your participation will provide valuable insights into market sentiment and help improve stock price forecasting models.
+
+This survey will take about 5–10 minutes to complete. Your responses will remain completely anonymous and confidential. We are committed to protecting your privacy, and no personal information will be shared or used for any purpose beyond this research.
+
+#### Survey Questions:
+1. **Market Confidence**: “Do you expect FAANG stock prices to increase, decrease, or remain stable over the next month?”  
+   - Increase significantly  
+   - Increase slightly  
+   - Remain stable  
+   - Decrease slightly  
+   - Decrease significantly  
+
+2. **Risk Appetite**: “What is your current risk appetite for investing in technology stocks?”  
+   - High  
+   - Moderate  
+   - Low  
+
+3. **External Factors**: “To what extent have recent market events (e.g., 2024 U.S. Presidential Election, Federal Reserve decisions) influenced your investment decisions?”  
+   - A great deal  
+   - Somewhat  
+   - Not at all  
+
+4. **Sector Preference**: “Besides FAANG stocks, which sectors are you considering for your portfolio over the next quarter?”  
+   - Technology (non-FAANG)  
+   - Healthcare  
+   - Energy  
+   - Consumer Goods  
+   - Other (please specify)  
+
+5. **Economic Outlook**: “How do you perceive the broader economic climate for technology investments?”  
+   - Strong growth  
+   - Moderate growth  
+   - Stagnation  
+   - Decline  
+
+Thank you for your time and contribution.
 
 \newpage
 
