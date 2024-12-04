@@ -28,6 +28,7 @@ library(tidyr)
 library(zoo)
 library(scales)
 library(reshape2)
+library(yardstick)
 
 analysis_data <- read_parquet("/Users/jamielee/TechStockForecast/data/02-analysis_data/analysis_data.parquet")
 ```
@@ -37,7 +38,7 @@ analysis_data <- read_parquet("/Users/jamielee/TechStockForecast/data/02-analysi
 
 The performance of FAANG stocks - **Meta (META)**, **Amazon (AMZN)**, **Apple (AAPL)**, **Netflix (NFLX)**, and **Google (GOOGL)**, has become a cornerstone of global financial markets, reflecting broader economic trends and investor sentiment. These companies represent diverse sectors, from e-commerce and technology to entertainment and digital advertising, making their stock price movements critical indicators of market health. In the context of the 2024 post-pandemic recovery and a pivotal United States Presidential Election, understanding and predicting FAANG stock price trends is particularly relevant for investors and policymakers alike.
 
-This paper leverages historical stock price data sourced from Yahoo Finance (2020–2024) to develop predictive models for FAANG stock prices in November and December 2024. Utilizing XGBoost regression models, we analyze historical trends and engineered features, including lagged prices, moving averages, and volatility measures, to forecast stock price movements. These predictions provide valuable insights into the behavior of FAANG stocks during critical periods, such as post-election market adjustments, and highlight opportunities and risks for short-term and long-term investment strategies.
+This paper focuses on historical stock price data from years 2020 to 2024, sourced from Yahoo Finance [@yahoofinance] to develop predictive models for FAANG stock prices in November and December 2024. Utilizing XGBoost regression models, we analyze historical trends and engineered features, including lagged prices, moving averages, and volatility measures, to forecast stock price movements. These predictions provide valuable insights into the behavior of FAANG stocks during critical periods, such as post-election market adjustments, and highlight opportunities and risks for short-term and long-term investment strategies.
 
 The primary estimand of this study is the predicted adjusted stock price for each FAANG company during November and December 2024, derived from features constructed using historical price trends and technical indicators. Our findings reveal that predictions for November align closely with observed trends for most stocks, reflecting the model's ability to capture short-term dynamics. However, discrepancies, such as the underestimation of NFLX prices, underscore the influence of unique stock-specific factors. For December, predictions indicate a flat trajectory across stocks, likely influenced by data limitations and post-election market sentiment.
 
@@ -49,26 +50,20 @@ The implications of these findings extend beyond price predictions, offering a f
 
 ## Data Overview
 
-This analysis uses historical stock price data for FAANG companies (Meta, Amazon, Apple, Netflix, and Google) obtained from the Yahoo Finance API via the `tidyquant` library in R on November 30, 2024. The dataset spans from January 1, 2020, to December 31, 2024, providing daily records of stock performance, including key metrics such as opening, high, low, and closing prices, trading volume, and adjusted closing prices normalized for corporate actions. To enhance the predictive power of the data, several derived features were constructed. These include lagged adjusted prices to capture sequential trends, daily returns to measure proportional changes, rolling averages to smooth short- and long-term fluctuations, and a rolling standard deviation of prices to quantify market volatility. These features offer a structured framework for identifying patterns and forecasting future stock movements.
+This analysis uses historical stock price data for FAANG companies (Meta, Amazon, Apple, Netflix, and Google) obtained from the Yahoo Finance API [@yahoofinance] via the `tidyquant`of @tidyquant library in R [@citeR] on November 30, 2024. The data ranges from January 1, 2020, to November 29th, 2024, providing daily records of stock performance, including key metrics such as opening, high, low, and closing prices, trading volume, and adjusted closing prices normalized for corporate actions. To extend the data for December 2024, placeholder dates are generated and combined with the existing data, followed by interpolation to fill missing values in the adjusted price column. Such data cleaning ensures a complete and continuous dataset for model training and prediction. Details of the data cleaning and interpolation process are provided in [Appendix -@sec-data-cleaning]. 
 
-The raw data underwent pre-processing to address missing values, particularly for adjusted prices. Missing entries were filled using forward and backward imputation to ensure data continuity. Placeholder dates for December 2024 were interpolated to prepare for out-of-sample predictions. The cleaned data, prepared using the `tidyverse` of [@tidyverse], `lubridate` of [@lubridate], `TTR` of [@ttr], and `arrow` of [@arrow] libraries, provides a consistent and comprehensive foundation for modeling and analysis. Further details on the data preparation process are included in [Appendix -@sec-data-details].
+Data cleaning and analysis are conducted by employing the following packages: 'tidyverse' of @tidyverse, 'TTR' of @ttr, and 'arrow' of @arrow.
 
 ## Measurement
-Stock price data encapsulates market dynamics influenced by diverse factors, including macroeconomic conditions, corporate events, and investor sentiment. The raw variables in this dataset, such as **`open`**, **`high`**, **`low`**, **`close`**, and **`adjusted`**, capture key price points and provide a snapshot of market activity for each trading day. However, while these variables accurately reflect daily trading outcomes, they may not fully represent intraday fluctuations or complex trading dynamics.
 
-Constructed variables enhance the analytical depth of the dataset by quantifying sequential trends, price variability, and momentum. For instance, **`Lag_1`** captures the adjusted closing price from the previous trading day, providing context for sequential patterns. Variables like **`daily_return`** measure proportional daily changes in price, while moving averages such as **`Rolling_Mean_7`**, **`sma_20`**, and **`sma_50`** smooth short- and long-term price fluctuations, offering a clearer view of overall trends. Additionally, **`volatility`**, computed as the rolling standard deviation of closing prices, quantifies recent price variability and reflects market uncertainty.
+Stock prices reflect a company's perceived value in financial markets, influenced by factors like economic conditions, corporate performance, and investor sentiment. These dynamics are captured through daily trading data, where variables such as **'open'**, **'high'**, **'low'**, **'close'**, **'adjusted'**, and **'volume'** provide a structured snapshot of market activity. Each data point represents an aggregated view of trading outcomes for a given day, simplifying continuous price fluctuations into discrete records. For example, the adjusted price accounts for corporate actions like stock splits and dividends, offering a standardized metric for historical comparison. Volume indicates total shares traded, reflecting market liquidity and investor interest but not the motivations behind trades.
 
-Market activity is further contextualized through **`volume`**, representing the total shares traded daily, a proxy for investor interest and liquidity. The inclusion of **`symbol_encoded`**, a numerical encoding of stock tickers, standardizes categorical data for compatibility with machine learning models. Together, these features create a robust framework for analysis, balancing raw price data with derived metrics that highlight market trends and dynamics.
-
-Despite the strengths of these variables, limitations exist. Raw price points do not account for intraday variations, while constructed metrics may oversimplify complex market behaviors. External shocks, such as economic crises or regulatory changes, may not be fully captured within the variables’ scope. Acknowledging these constraints is essential for interpreting the results and understanding the broader context of the analysis. These limitations are further discussed in [Appendix -@sec-data-details].
+The data assumes consistency across trading days, where daily aggregates like close encapsulate the final market consensus for that day. However, this measurement approach may overlook intraday volatility and the nuanced impact of macroeconomic events or breaking news that influence trading behavior. Similarly, variables like date simplify time into discrete intervals, capturing trends over time but not the continuous nature of market dynamics. While these measurements are essential for analyzing historical trends, they simplify complex phenomena like investor sentiment and market reactions, such as the rationale behind trades or varying confidence levels. To address these limitations, feature engineering constructs variables that capture trends, volatility, and other patterns, enhancing the data’s analytical value for model training and predictive analysis. Further details are provided in [Appendix -@sec-data-details].
 
 
 ## Variables {#sec-variables}
 
-The dataset used for this analysis includes both original and constructed variables, designed to capture temporal trends, volatility, and momentum in stock price movements. Below is a detailed overview of the variables included in the model:
-
-### Original Variables
-The original variables directly obtained from the raw stock price data are:
+The collected data from Yahoo Finance [@yahoofinance] contains several key variables relevant to the analysis. 
 
 - **`symbol`**: The stock ticker symbol identifying the company (e.g., AAPL for Apple, AMZN for Amazon).
 - **`date`**: The trading date, essential for analyzing time-series trends.
@@ -80,7 +75,7 @@ The original variables directly obtained from the raw stock price data are:
 - **`adjusted`**: The closing price adjusted for corporate actions such as splits or dividends, ensuring consistency for trend analysis.
 
 ### Constructed Variables
-The constructed variables were engineered to enhance the model's predictive performance by capturing price trends, volatility, and momentum:
+To enhance the data's analytical depth and support predictive modeling, the following constructed variables were engineered to capture price trends, volatility, and momentum:
 
 - **`Lag_1`**: The closing price from the previous trading day, derived using the `lag()` function. This variable captures sequential patterns in stock prices.
 - **`Rolling_Mean_7`**: A 7-day moving average of adjusted closing prices, computed using the `rollmean()` function. This variable smooths short-term fluctuations to highlight weekly trends.
@@ -114,7 +109,7 @@ ggplot(analysis_data, aes(x = adjusted)) +
     strip.text = element_text(face = "bold")
   )
 ```
-@fig-outcome-var illustrates the distribution of the adjusted closing prices (adjusted) for each FAANG stock, faceted by stock symbol. These distributions highlight the variability in stock prices across the companies, with stocks like NFLX showing higher price ranges, whereas GOOGL and AMZN have narrower distributions. The visual emphasizes the diverse price behavior among FAANG stocks, underscoring the need for tailored models that capture these unique trends. By normalizing for corporate actions like stock splits or dividends, the adjusted closing price serves as a reliable target variable for forecasting and analysis.
+@fig-outcome-var illustrates the distribution of the adjusted closing prices (**'adjusted'**) for each FAANG stock, faceted by stock symbol. These distributions highlight the variability in stock prices across the companies, with stocks like NFLX showing higher price ranges, whereas GOOGL and AMZN have narrower distributions. The visual emphasizes the diverse price behavior among FAANG stocks, underscoring the need for tailored models that capture these unique trends. By normalizing for corporate actions like stock splits or dividends, the adjusted closing price serves as a reliable target variable for forecasting and analysis.
 
 ### Predictor Variables
 The predictor variables used to model the adjusted closing price are:
@@ -126,7 +121,7 @@ The predictor variables used to model the adjusted closing price are:
 - **`daily_return`**: The normalized daily percentage price change.
 - **`symbol_encoded`**: A numerical representation of the stock ticker symbol, capturing company-level differences.
 
-Together, these variables provide a robust framework for understanding and predicting stock price movements over time, leveraging both raw market indicators and derived metrics.
+Together, these variables provide a robust framework for understanding and predicting stock price movements over time, utilizing both raw market indicators and derived metrics.
 
 ```{r}
 #| echo: false
@@ -137,8 +132,7 @@ Together, these variables provide a robust framework for understanding and predi
 
 # Select and display random sample of predictive variables from analysis_data
 set.seed(123) # For reproducibility
-library(dplyr)
-library(knitr)
+
 
 analysis_data %>%
   select(
@@ -165,23 +159,17 @@ analysis_data %>%
   )
 
 ```
-@tbl-pred-var displays a random selection of five rows from the dataset, showcasing the predictive variables utilized in the modeling process. Each row represents data for a specific stock, including values for lagged adjusted closing prices (Lag_1), smoothed weekly averages (Rolling Mean (7-Day)), and medium- and long-term moving averages (SMA (20-Day) and SMA (50-Day)). These variables are complemented by measures of price volatility, daily percentage returns (Daily Return), and an encoded numerical identifier for the stock symbol (Symbol (Encoded)). All values are rounded to two decimal places to enhance clarity and precision. This table illustrates the diverse set of historical and technical indicators used to predict future adjusted stock prices.
+@tbl-pred-var displays a random selection of five rows from the dataset, showcasing the predictive variables utilized in the modeling process. Each row represents data for a specific stock, including values for lagged adjusted closing prices (Lag_1), smoothed weekly averages (Rolling Mean (7-Day)), and medium- and long-term moving averages (SMA (20-Day) and SMA (50-Day)). These variables are complemented by measures of price volatility, daily percentage returns (Daily Return), and an encoded numerical identifier for the stock symbol (Symbol (Encoded)). All values are rounded to two decimal places to enhance clarity and precision.
 
 # Model {#sec-model}
 
 ## Model Overview
 
-The models in this study forecast the adjusted closing prices of FAANG stocks (Meta, Amazon, Apple, Netflix, and Google) for the months of November and December 2024. Separate models are constructed for each month to capture the time-dependent nature of stock price movements and to account for fluctuations in market conditions leading up to the forecast period. These models utilize a combination of historical stock price data and technical indicators, such as moving averages, volatility, and lagged price features, to estimate future stock prices for each of the five FAANG companies.
-
-To model the changes in stock prices over time, we use features that capture both short-term and long-term market trends. The models incorporate lagged stock prices, 7-day rolling averages, 20-day and 50-day simple moving averages (SMA), daily returns, and volatility indicators. These features are crucial for understanding the patterns and cycles in stock price movements. XGBoost, a powerful machine learning algorithm, is used to build these models, allowing for the capture of non-linear relationships and interactions between the technical indicators and future stock prices.
-
-The training datasets for the November and December models are defined using data up to October 31, 2024, and November 30, 2024, respectively. The models take into account temporal changes in stock prices by using features like lagged prices and rolling averages, which help capture the dynamics of stock price behavior. Additionally, XGBoost's flexibility allows the models to account for varying levels of volatility and market shifts across the different FAANG stocks.
-
-This modeling approach enables the prediction of future stock prices, considering how past price trends and market indicators evolve. By focusing on the November and December timeframes, the models aim to provide forecasts that reflect recent market conditions and predict likely price movements as we approach the end of 2024. The detailed model specifications, including feature selection and hyperparameter tuning, are further discussed in [Appendix -@sec-model-details]
+The XGBoost regression models in this study predict adjusted closing prices for FAANG stocks—Meta, Amazon, Apple, Netflix, and Google—for November and December 2024. Separate models are constructed for each month to account for time-specific market dynamics and recent trends. To capture short and long-term trends in stock price movements, these models incorporate features such as lagged prices, moving averages, daily returns, and volatility. Training data is segmented by timeframe, with the November model using data up to October 31, 2024, and the December model using data through November 30, 2024. Temporal features and technical indicators enable the models to capture stock-specific volatility and broader market trends. Further details on model specifications and diagnostics are provided in [Appendix -@sec-model-details].
 
 ## Model Assumptions
 
-To ensure the validity and reliability of our stock price prediction models, several key assumptions are made during the modeling process. These assumptions are necessary to capture the complexities of stock price behavior while maintaining a clear and interpretable framework for forecasting:
+To ensure the validity and reliability of our XGBoost models, several key assumptions are made during the modeling process:
 
 - **Non-Linearity in Price Movements**: Stock prices often exhibit non-linear patterns due to various market forces, including economic news, company performance, and broader market trends. To account for these non-linearities, we use XGBoost, which allows for the modeling of complex, non-linear relationships between the predictors (such as lagged prices and moving averages) and the target variable (adjusted closing prices). This assumption ensures that the model can effectively capture the changing dynamics of stock price movements over time.
 
@@ -195,9 +183,6 @@ To ensure the validity and reliability of our stock price prediction models, sev
 
 - **Use of XGBoost’s Flexibility**: The XGBoost algorithm is assumed to be an appropriate method for this analysis due to its ability to handle large datasets, capture non-linear relationships, and deal with complex interactions between features. We assume that its regularization techniques will help prevent overfitting while still capturing the intricate patterns present in the stock price data.
 
-These assumptions form the foundation of the models and guide the interpretation of the results. While they allow for effective forecasting, it is important to acknowledge that stock price prediction is inherently uncertain, and the accuracy of predictions may vary depending on unforeseen market events and fluctuations.
-
-
 
 ## Model Setup
 
@@ -207,9 +192,7 @@ Modeling processes are conducted by employing the following packages: `tidyquant
 
 ### November Model
 
-The primary goal of the November model is to predict the adjusted closing prices of FAANG stocks for the month of November 2024 based on historical stock price data. This model is structured as a regression task using the XGBoost algorithm to estimate the future adjusted closing prices for each of the five FAANG companies.
-
-The model setup can be described as follows:
+The primary estimand of the November model is the adjusted closing price of FAANG stocks for November 2024. The model is structured as a regression task using the XGBoost algorithm to estimate these prices for each of the five FAANG companies. The model setup is as follows:
 
 $$
 \hat{y}_{i} = f(X_i)
@@ -227,25 +210,27 @@ Where:
   - `daily_return`: The daily percentage change in the adjusted closing price.
   - `symbol_encoded`: A numeric encoding for the FAANG companies (Meta, Amazon, Apple, Netflix, Google).
 
-The dataset for the November model is prepared by extracting the relevant data from January 2020 to October 31, 2024. Features like moving averages and volatility are calculated based on this historical data, and the model is trained to predict the adjusted closing prices for November 2024.
+The data for the November model is prepared by extracting the relevant data from January 2020 to October 31, 2024. Features like moving averages and volatility are calculated based on this historical data, and the model is trained to predict the adjusted closing prices for November 2024.
 
-The model was implemented using the **`xgboost`** package in R, which is optimized for performance in regression tasks:
+The model was implemented using the `xgboost` of @xgboost in R, which is optimized for performance in regression tasks:
 
 $$
 y_i = \text{XGBoost}(X_i, \theta)
 $$
+Where $y_i$ represents the actual adjusted closing price for day $i$ and $\theta$ represents the model parameters to be learned during training.
 
-Where $y_i$ represents the actual adjusted closing price for day $i$ and $\theta$ represents the model parameters to be learned during training. The model is trained with the following key parameters:
-- **Max Depth**: 6
-- **Learning Rate**: 0.1
-- **Number of Rounds**: 100
-- **Objective Function**: Regression with squared error
+Key hyperparameters for the model are specificed as:
+
+- **Max Depth**: 6, to control the complexity of the trees and prevent overfitting
+- **Learning Rate**: 0.1, to balance the contribution of each boosting iteration
+- **Number of Rounds**: 100, to determine the total iterations for model optimization
+- **Objective Function**: Regression with squared error, suitable for continuous target variables.
+
+This set-up ensures that the model captures patterns in stock price movements while balancing bias and variance for improved predictive performance. Key assumptions include the appropriateness of historical stock price trends and technical indicators for predicting future prices.
 
 ### December Model
 
-The December model follows a similar approach to the November model, but is trained using data up to November 30, 2024. This ensures that the model accounts for the most recent stock price movements leading up to December, providing a more accurate prediction for the final month of 2024.
-
-The setup for the December model mirrors that of the November model, with the same features and target variable, but applied to the updated dataset. The model structure remains the same, and the XGBoost algorithm is again used for regression:
+The December model follows a similar approach to the November model but incorporates extrapolated data for December 2024. Placeholder dates for December are added, and missing values in the adjusted price column are filled using forward and backward interpolation. This ensures the model reflects recent trends while accounting for the data cutoff on November 30, 2024. The model structure remains the same, and the XGBoost algorithm is again used for regression:
 
 $$
 \hat{y}_{i} = f(X_i)
@@ -256,10 +241,9 @@ Where:
 - $\hat{y}_i$ is the predicted adjusted closing price for the stock on day $i$ in December 2024.
 - $X_i$ includes the same features as the November model, but with data up to November 30, 2024.
 
-The December model is trained using the same XGBoost parameters as the November model. Once trained, the model will generate predictions for December 2024, leveraging the latest market conditions reflected in the training data. 
+The December model is trained using the `XGBoost` of @xgboost library and the same parameters as the November model. Once trained, the model will generate predictions for December 2024, leveraging the latest market conditions reflected in the training data. 
 
 The assumptions and model design are consistent with the November model, with the key differences being the updated data and the forecast period. By training separate models for November and December, we can capture any evolving trends or shifts in stock price behavior as we approach the end of 2024.
-
 
 ```{r}
 #| echo: false
@@ -278,14 +262,74 @@ dec_model <- readRDS("/Users/jamielee/TechStockForecast/models/dec_model.rds")
 
 ## Model Justification
 
-The XGBoost model is the most suitable approach for forecasting FAANG stock prices in November and December 2024. Our primary outcome variable is the adjusted closing price of each stock, which is continuous and unbounded. XGBoost, a gradient boosting algorithm, excels in handling regression tasks with large datasets, capturing complex, non-linear relationships between features such as lagged prices, moving averages, volatility, and daily returns. To model these relationships effectively, XGBoost's ability to handle feature interactions and non-linearities is key. The inclusion of rolling averages and volatility allows the model to account for both short-term fluctuations and longer-term trends in stock prices, which are often influenced by broader market dynamics. Additionally, the model's flexibility helps capture the intricacies of stock price behavior over time, ensuring that past market patterns are reflected in future predictions.
+The XGBoost model is the most suitable approach for forecasting FAANG stock prices in November and December 2024. Our primary outcome variable is the adjusted closing price of each stock, which is continuous and unbounded. XGBoost, a gradient boosting algorithm, excels in handling regression tasks with large datasets, capturing complex, non-linear relationships between features such as lagged prices, moving averages, volatility, and daily returns. To model these relationships effectively, XGBoost's ability to handle feature interactions and non-linearities is key. The inclusion of rolling averages and volatility allows the model to account for both short-term fluctuations and longer-term trends in stock prices, which are often influenced by broader market dynamics. Additionally, the model's flexibility helps capture the intricacies of stock price behavior over time, ensuring that past market patterns are reflected in future predictions. Details are further discussed in [Appendix -@sec-model-justification]
 
 While simpler models like linear regression could be used, they would fail to capture the complexity and non-linearity inherent in financial data. Machine learning techniques like random forests or support vector machines could also provide robust predictions, but XGBoost’s combination of accuracy, speed, and interpretability makes it the best choice for this analysis. Ultimately, XGBoost’s ability to learn from the data and adjust to market conditions enhances its suitability for predicting FAANG stock prices in an uncertain and volatile market environment.
 
+## Model summary
+Both models were evaluated using RMSE, MAE, and R² metrics, as shown below in @fig-model-summary. The November model achieved an RMSE of 40.50, MAE of 16.40, and R² of 0.988, indicating it captured meaningful variability in the stock price movements. The December model reported significantly lower RMSE (1.10) and MAE (0.78), with an R² of 0.999, suggesting near-perfect alignment with the data. However, the December model's near-flat projections likely stem from minimal variability in the placeholder data used for December, resulting in artificially inflated performance metrics.
+```{r}
+#| echo: false
+#| eval: true
+#| label: fig-model-summary
+#| fig-cap: "November and December Model Summary"
+#| warning: false
+
+# Filter test data for November and December
+nov_test <- analysis_data %>%
+  filter(as.Date(date) > as.Date("2024-10-31") & as.Date(date) <= as.Date("2024-11-30"))
+
+dec_test <- analysis_data %>%
+  filter(as.Date(date) > as.Date("2024-11-30") & as.Date(date) <= as.Date("2024-12-31"))
+
+# Prepare test features and labels for November
+X_test_nov <- nov_test %>%
+  select(Lag_1, Rolling_Mean_7, sma_20, sma_50, volatility, daily_return, symbol_encoded) %>%
+  as.matrix()
+y_test_nov <- as.numeric(nov_test$adjusted)
+
+# Prepare test features and labels for December
+X_test_dec <- dec_test %>%
+  select(Lag_1, Rolling_Mean_7, sma_20, sma_50, volatility, daily_return, symbol_encoded) %>%
+  as.matrix()
+y_test_dec <- as.numeric(dec_test$adjusted)
+
+# Generate predictions
+nov_preds <- predict(nov_model, X_test_nov)
+dec_preds <- predict(dec_model, X_test_dec)
+
+# Calculate metrics for November
+nov_metrics <- tibble(
+  Metric = c("RMSE", "MAE", "R²"),
+  November = c(
+    rmse_vec(y_test_nov, nov_preds),
+    mae_vec(y_test_nov, nov_preds),
+    rsq_vec(y_test_nov, nov_preds)
+  )
+)
+
+# Calculate metrics for December
+dec_metrics <- tibble(
+  Metric = c("RMSE", "MAE", "R²"),
+  December = c(
+    rmse_vec(y_test_dec, dec_preds),
+    mae_vec(y_test_dec, dec_preds),
+    rsq_vec(y_test_dec, dec_preds)
+  )
+)
+
+# Combine metrics into one table
+combined_metrics <- nov_metrics %>%
+  left_join(dec_metrics, by = "Metric")
+
+# Display combined table using kable
+kable(combined_metrics)
+```
+These results highlight the November model's relative robustness in capturing dynamic trends compared to the December model's overfitted nature due to static input data. This emphasizes the importance of data variability in evaluating predictive model performance.
 
 # Results {#sec-results}
 
-Using the models trained on historical data, we applied the XGBoost algorithm to predict the adjusted closing prices for each of the FAANG stocks during these two months. For November, we filtered the data from November 1st to 30th, 2024, and prepared the relevant features for prediction, including lagged prices, rolling means, and volatility indicators. Since we have the actual adjusted closing prices for November, we compare the predicted values with the actual data to evaluate model performance. For December, the same approach was applied to the data from December 1st to 31st, 2024, but since the actual prices for this month are unavailable, the results for December focus solely on the predicted values.
+Using the models trained on historical data, we implemented the XGBoost algorithm to predict the adjusted closing prices for each of the FAANG stocks during these two months. For November, since we have the actual adjusted closing prices for November, we compare the predicted values with the actual data to evaluate model performance. For December, since the actual prices for this month are unavailable, the results for December focus solely on the predicted values.
 
 ```{r}
 #| echo: false
@@ -345,7 +389,7 @@ dec_results <- dec_test %>%
 #| echo: false
 #| eval: true
 #| label: fig-nov-actual-pred
-#| fig-cap: "Actual vs Predicted Stock Prices for November 2024"
+#| fig-cap: "Comparison of actual (blue) vs. predicted (red) adjusted closing stock prices for FAANG companies in November 2024. Highlights the model's ability to capture general trends but shows variability in performance across stocks, particularly for Netflix (NFLX)"
 #| warning: false
 
 # Plot actual vs predicted prices for November 2024
@@ -366,52 +410,14 @@ ggplot(nov_results, aes(x = as.Date(date))) +
     axis.text.x = element_text(angle = 45, hjust = 1)
   )
 ```
-@fig-nov-actual-pred presents the comparison of actual versus predicted stock prices for the FAANG companies during November 2024. For each company—Apple (AAPL), Amazon (AMZN), Meta (META), Netflix (NFLX), and Google (GOOGL)—we plot the actual adjusted closing prices (in blue) alongside the predicted values (in red). The predictions, derived from our XGBoost models, demonstrate a generally strong alignment with the observed stock price movements, particularly for AAPL and META, where the predicted prices closely follow the actual trends. However, for companies like NFLX, the predicted values show a less consistent match, especially later in the month. This discrepancy suggests that while the model captures major trends effectively, there may be some volatility or market events that were not fully accounted for in the prediction process. These visualizations help assess the performance of our models and highlight areas where the predictions are robust as well as where there is room for improvement.
-
-
-## Heatmap of Prediction Errors (November 2024)
-```{r}
-#| echo: false
-#| eval: true
-#| label: fig-heatmap
-#| fig-cap: "Heatmap of Prediction Errors for November 2024"
-#| warning: false
-
-# Add the `error` column to `nov_results`
-nov_results <- nov_results %>%
-  mutate(error = abs(adjusted - predicted_adjusted))  # Calculate absolute error
-
-
-# Prepare data for heatmap
-nov_heatmap_data <- nov_results %>%
-  select(date, symbol, error) %>%
-  spread(symbol, error)
-
-# Plot heatmap of prediction errors
-ggplot(melt(nov_heatmap_data, id.vars = "date"), aes(x = date, y = variable, fill = value)) +
-  geom_tile() +
-  scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0) +
-  labs(
-    x = "Date",
-    y = "Stock Symbol",
-    fill = "Error"
-  ) +
-  theme_minimal() +
-  theme(
-    axis.text.x = element_text(angle = 45, hjust = 1),
-    text = element_text(size = 12)
-  )
-```
-@fig-heatmap highlights the discrepancies between the predicted and actual stock prices for each FAANG company on a daily basis. The color intensity, ranging from light pink to deep red, indicates the magnitude of the errors, with darker shades representing higher errors. Notably, the Netflix (NFLX) stock shows consistently higher errors throughout November, particularly on November 4th and November 11th, where the error values reach above 100, as indicated by the deeper red color. Meta (META) and Google (GOOGL) exhibit moderate errors, with values peaking around November 11th but staying relatively consistent compared to NFLX. In contrast, Amazon (AMZN) and Apple (AAPL) show smaller error values, especially in the first half of the month, where the colors are much lighter. This heatmap provides a clear view of which stocks and dates the model struggled with the most, offering insights into potential areas for further model improvement.
-
-
+@fig-nov-actual-pred compares actual (blue) and predicted (red) stock prices for FAANG companies during November 2024. The model captures trends effectively for AAPL and META, where predictions align closely with observed prices. However, for NFLX, discrepancies appear later in the month, indicating the model's limitations in capturing certain market volatilities.
 
 ## Average Predicted Stock Price - November
 ```{r}
 #| echo: false
 #| eval: true
 #| label: fig-nov-avg
-#| fig-cap: "Average Predicted Stock Prices for November 2024"
+#| fig-cap: "Average predicted stock prices for FAANG companies in November 2024. Netflix leads with the highest predicted average price (~$750), while Google has the lowest (~$180), reflecting varied performance across companies based on model predictions."
 #| warning: false
 
 # Calculate average predicted prices for November
@@ -436,17 +442,15 @@ ggplot(nov_avg_prices, aes(x = symbol, y = avg_predicted_price, fill = symbol)) 
   scale_fill_brewer(palette = "Set2")
 
 ```
-@fig-nov-avg illustrates the average predicted stock prices for each FAANG company in November 2024. The predictions reveal significant variations across the companies, with Netflix (NFLX) showing the highest predicted average price, approximately **$600**, followed by Meta (**'META'**) with an average just above **$500**. In contrast, Apple (**'AAPL'**), Amazon (**'AMZN'**), and Google (**'GOOGL'**) exhibit considerably lower average predicted prices, with AAPL at around **$225**, AMZN at **$210**, and GOOGL at approximately **$180**. This visualization highlights the distinct predicted performance of each company, suggesting that Netflix is expected to outperform the others in terms of stock price in November 2024, based on our model’s predictions. These results provide a clear comparative overview of expected stock movements and serve as a foundation for further analysis of market trends in the upcoming months.
+@fig-nov-avg shows the average predicted stock prices for FAANG companies in November 2024. Netflix (NFLX) has the highest predicted average price (~$750), followed by Meta (META) at just above $500. Apple (AAPL), Amazon (AMZN), and Google (GOOGL) exhibit lower averages, at ~$225, ~$210, and ~$180, respectively. The chart highlights Netflix's expected strong performance compared to other FAANG companies. 
 
 ## Predicted Stock Price Trends - December
-
-The line chart above presents the predicted stock prices for each FAANG company throughout December 2024. The predicted prices for each stock exhibit a strikingly consistent slope, with no significant fluctuations or adjustments throughout the month. For example, Netflix (NFLX) shows a steady increase, while Apple (AAPL), Amazon (AMZN), and Google (GOOGL) display relatively flat predicted price trends. This consistent pattern suggests potential limitations in the model, as real-world stock prices are typically subject to more volatility and market dynamics that are not captured by this prediction. 
 
 ```{r}
 #| echo: false
 #| eval: true
 #| label: fig-dec-pred
-#| fig-cap: "Predicted Stock Price Trends for December 2024"
+#| fig-cap: "Predicted stock prices for FAANG companies in December 2024. The model predicts relatively flat price trends for all companies, with Netflix having the highest predicted price and Google the lowest"
 #| warning: false
 
 ggplot(dec_results, aes(x = as.Date(date), y = predicted_adjusted, color = symbol)) +
@@ -463,17 +467,15 @@ ggplot(dec_results, aes(x = as.Date(date), y = predicted_adjusted, color = symbo
     axis.text.x = element_text(angle = 45, hjust = 1)
   )
 ```
-The lack of variability in the predictions may indicate that the model fails to account for potential market shifts, such as reactions to economic news, company announcements, or other external factors. Additionally, the absence of any sharp price movements could suggest that the model overly smooths the data, possibly due to the features used or the nature of the training data. These limitations highlight the importance of refining the model to incorporate broader market influences and improve its responsiveness to sudden changes in the stock market environment.
+@fig-dec-pred presents the predicted stock prices for FAANG companies in December 2024, showing flat trends with no significant fluctuations. Netflix (NFLX) has the highest predicted price, while Google (GOOGL) has the lowest. Such flat trends highlight potential limitations in the model's ability to capture real-world stock price volatility, further detailed in [Appendix -@sec-model-limitations].
 
 ## Average Stock Prices Bar Chart - December
-
-
 
 ```{r}
 #| echo: false
 #| eval: true
 #| label: fig-dec-avg
-#| fig-cap: "Average Predicted Stock Prices for December 2024"
+#| fig-cap: "Average predicted stock prices for FAANG companies in December 2024. Netflix leads with the highest predicted price ($825), followed by Meta ($600), while Apple, Amazon, and Google show considerably lower averages."
 #| warning: false
 
 # Calculate average predicted prices for December
@@ -498,41 +500,14 @@ ggplot(dec_avg_prices, aes(x = symbol, y = avg_predicted_price, fill = symbol)) 
   scale_fill_brewer(palette = "Set2")
 
 ```
-The bar chart above displays the average predicted stock prices for each FAANG company in December 2024. As shown, Netflix (NFLX) is expected to have the highest average predicted stock price, just above **$750**, followed by Meta (META) at approximately **$600**. In contrast, Apple (AAPL), Amazon (AMZN), and Google (GOOGL) show significantly lower predicted prices, with AAPL around **$250**, AMZN slightly lower, and GOOGL at just above **$200**. This suggests that, according to the model, Netflix is projected to continue outperforming other FAANG companies in terms of stock price. These predictions reflect market trends modeled from historical data, with a noticeable discrepancy between the higher-performing stocks and the others. The chart provides a comparative view of how each stock is expected to fare during December 2024, contributing to our understanding of potential market movements for the month.
-
-
-## Average Predicted Stock Price - December
-
-```{r}
-#| echo: false
-#| eval: true
-#| label: tbl-dec-avg
-#| tbl-cap: "Average Predicted Stock Prices for December 2024"
-#| warning: false
-
-# Calculate average predicted price for December
-dec_avg_prices <- dec_results %>%
-  group_by(symbol) %>%
-  summarize(avg_predicted_price = mean(predicted_adjusted, na.rm = TRUE)) %>%
-  mutate(avg_predicted_price = dollar(round(avg_predicted_price, 2))) %>%  # Format as dollar and round
-  arrange(desc(avg_predicted_price))  # Sort by average price in descending order
-
-# Display the table
-dec_avg_prices %>%
-  kable(
-    caption = "Average Predicted Stock Prices for December 2024",
-    col.names = c("Stock Symbol", "Average Predicted Price"),
-    format = "markdown"  # Output as markdown for readability
-  )
-```
-@tbl-dec-avg presents the average predicted stock prices for each FAANG company in December 2024. According to the predictions, Netflix (NFLX) is expected to have the highest average stock price at **$887.84**, followed by Meta (META) with an average of **$574.92**. Apple (AAPL) is predicted to have an average stock price of **$235.37**, while Amazon (AMZN) and Google (GOOGL) are expected to have lower average prices, at **$207.93** and **$168.69**, respectively. These predicted values highlight significant variations across the FAANG companies, with Netflix forecasted to substantially outperform the others. This table offers a clear numerical summary of the expected market performance for each company, providing insights into potential market trends for December 2024.
+@fig-dec-avg shows the average predicted December 2024 stock prices for FAANG companies. Netflix (NFLX) leads with the highest predicted price, just around $825, followed by Meta (META) at $600. Apple (AAPL), Amazon (AMZN), and Google (GOOGL) are projected significantly lower, around $250, $200, and $200, respectively. These predictions highlight Netflix's strong expected performance compared to its peers, reflecting trends modeled from historical data.
 
 ## Combined November and December
 ```{r}
 #| echo: false
 #| eval: true
 #| label: fig-nov-dec-pred
-#| fig-cap: "Predicted Stock Prices for November and December 2024"
+#| fig-cap: "Predicted stock prices for FAANG companies across November (red) and December (teal) 2024. November predictions exhibit variability, particularly for Apple (AAPL), Meta (META), Amazon (AMZN), and Google (GOOGL), while December predictions flatten, showing minimal fluctuations. Netflix (NFLX) remains nearly flat across both months. Highlights the model's reduced sensitivity to potential market dynamics in December."
 #| warning: false
 
 # Combine November and December results
@@ -563,8 +538,7 @@ ggplot(combined_results, aes(x = as.Date(date), y = predicted_adjusted, color = 
 
 
 ```
-@fig-nov-dec-pred above illustrates the predicted stock prices for each FAANG company across November and December 2024. The predictions are shown for both months, with the November predictions represented by the teal lines and the December predictions shown in red. For companies like Apple (AAPL) and Meta (META), the model predicts a notable increase in stock prices during November, followed by a flat trend throughout December, indicating minimal movement in the predicted prices during the second month. In contrast, for Netflix (NFLX), the predicted stock price remains almost flat through both months, showing limited variation. Amazon (AMZN) and Google (GOOGL) exhibit more fluctuations in November, with predicted prices stabilizing into flat trends for December. This pattern highlights a potential limitation of the model, as it fails to capture significant market dynamics or volatility in December, suggesting that the model may not fully account for market influences or external factors that could impact stock prices at the end of the year.
-
+@fig-nov-dec-pred illustrates predicted FAANG stock prices for November (teal) and December (red) 2024. November shows dynamic trends for Apple (AAPL), Meta (META), Amazon (AMZN), and Google (GOOGL), while December predictions flatten across all companies, particularly Netflix (NFLX). This highlights the model's limitation in capturing market volatility and end-of-year dynamics.
 
 ## Average Predicted Stock Prices for November and December 2024
 
@@ -572,7 +546,7 @@ ggplot(combined_results, aes(x = as.Date(date), y = predicted_adjusted, color = 
 #| echo: false
 #| eval: true
 #| label: fig-nov-dec-avg
-#| fig-cap: "Average Predicted Stock Prices for November and December 2024"
+#| fig-cap: "Average predicted stock prices for FAANG companies in November (red) and December (teal) 2024. Netflix shows the highest increase between months, while Apple, Amazon, and Google exhibit stable predicted prices. Only google displays month-to-month decrease."
 #| warning: false
 
 # Calculate average predicted prices for November and December
@@ -594,8 +568,7 @@ ggplot(avg_predicted_prices, aes(x = symbol, y = avg_price, fill = month)) +
     fill = "Month"
   )
 ```
-@fig-nov-dec-avg compares the average predicted stock prices for each FAANG company in November and December 2024. The chart clearly shows the predicted stock prices for November (red bars) and December (teal bars). Notably, Netflix (NFLX) is expected to experience the highest increase in stock price, with a marked difference between November and December. Meta (META) follows with a similar pattern, although the difference between months is less pronounced. In contrast, stocks like Apple (AAPL), Amazon (AMZN), and Google (GOOGL) show relatively stable predicted prices between the two months, with only slight variations. These results suggest that while some stocks, like Netflix, are predicted to have larger fluctuations, others show minimal change in their predicted prices, indicating potential stability or lack of significant market events influencing these stocks during December 2024.
-
+@fig-nov-dec-avg compares the average predicted stock prices for FAANG companies in November (red) and December (teal) 2024. Netflix (NFLX) shows the highest predicted prices and a notable increase from November to December. Meta (META) also exhibits a slight increase, while Apple (AAPL), Amazon (AMZN), and Google (GOOGL) show minimal variations, indicating relative stability in their predicted prices across the two months. Only Google (GOOGL) displays a slight month-to-month decrease, suggesting for further validation and data analysis. 
 
 # Discussion {#sec-discussion}
 
@@ -616,8 +589,7 @@ Further model diagnostics, including feature importance evaluations and residual
 
 ## US Election Effects
 
-@tbl-election-effect illustrates the stock prices of FAANG companies one trading day before and after the elections for the years 2016, 2020, and 2024. The post-election period often shows noticeable fluctuations in stock prices, with some stocks experiencing a sharp increase and others a decrease. For example, AAPL saw a slight increase in 2016 and 2020, while AMZN and NFLX both exhibited declines in 2016. In contrast, the 2024 data reveals an overall upward trend across all FAANG stocks, with particularly strong gains for NFLX, which rose from $755.51 before the election to $780.21 after the election, reflecting a surge in stock prices.
-
+@tbl-election-effect compares FAANG stock prices one trading day before and after the elections in 2016, 2020, and 2024. Post-election periods show noticeable fluctuations, with some stocks rising and others declining. For instance, AAPL experienced slight increases in 2016 and 2020, while AMZN and NFLX declined in 2016. In contrast, 2024 shows an overall upward trend across all FAANG stocks, with NFLX seeing the largest gain, rising from $755.51 to $780.21.
 ```{r}
 #| echo: false
 #| eval: true
@@ -693,8 +665,7 @@ final_table <- all_data %>%
 kable(final_table)
 
 ```
-This post-election stock behavior suggests that broader market reactions to election outcomes may have impacted stock prices significantly, particularly towards the end of the election year. Given this, it is likely that the increase in stock prices in late 2024 contributed to the predicted stock price trends in our model. As our model leverages historical data and trends starting from 2020, including fluctuations in stock prices towards the end of 2024, this surge likely influenced the final predictions, making them more optimistic and reflecting the strong market response post-election. This potential influence should be considered when interpreting the results, as it emphasizes the role of market sentiment and external factors that may cause sharp fluctuations in stock prices, beyond the intrinsic factors captured by the model.
-
+These trends suggest that market reactions to election outcomes significantly influenced stock prices, particularly in late 2024. This surge likely contributed to the increased stock price predictions for December in our model, which incorporates historical data and trends. The impact of market sentiment and external factors, such as post-election dynamics, highlights the need to consider broader influences when interpreting the model's results.
 
 \newpage
 
@@ -706,15 +677,21 @@ This post-election stock behavior suggests that broader market reactions to elec
 
 ## Data Cleaning {#sec-data-cleaning}
 
-The data cleaning process transformed raw FAANG stock price data from Yahoo Finance into a structured format suitable for predictive modeling. The dataset spans daily stock prices for Meta (META), Amazon (AMZN), Apple (AAPL), Netflix (NFLX), and Alphabet (GOOGL) from January 2020 to November 2024. To prepare for December 2024 predictions, placeholder dates were added to ensure a continuous sequence of daily observations for each stock, accounting for non-trading days such as weekends and holidays. Missing values in the adjusted closing price column were handled through forward and backward interpolation, ensuring the continuity required for calculating rolling statistics and lagged features.
+The data cleaning process transformed raw FAANG stock price data from Yahoo Finance into a structured format suitable for predictive modeling. The dataset spans daily stock prices for Meta (META), Amazon (AMZN), Apple (AAPL), Netflix (NFLX), and Alphabet (GOOGL) from January 2020 to November 2024. To prepare for December 2024 predictions, placeholder dates were added to create a continuous sequence of daily observations, accounting for non-trading days such as weekends and holidays. Missing values in the adjusted closing price column were addressed through forward and backward interpolation, ensuring data continuity for subsequent analyses. Rigorous testing ensured no critical missing values remain, all values fall within logical ranges, and the dataset maintain consistency.
 
-Feature engineering played a central role in enriching the dataset. Key features included **Lag_1** (adjusted closing price from the previous day), **Rolling_Mean_7** (7-day rolling average), **sma_20** and **sma_50** (20-day and 50-day simple moving averages), **volatility** (20-day rolling standard deviation), and **daily_return** (percentage change in adjusted closing price). Stock symbols were numerically encoded to allow the model to recognize patterns across multiple stocks. Rigorous data validation ensured that no critical missing values remained, all feature values fell within logical ranges, and the dataset was consistent. The cleaned and feature-rich dataset was saved in Parquet format for efficient processing and compatibility with the machine learning workflow.
+## Feature Engineerring {#sec-feature-engineering}
+Feature engineering enriched the dataset with additional predictors to improve model performance. Key features included Lag_1 (adjusted closing price from the previous day), Rolling_Mean_7 (7-day rolling average), sma_20 and sma_50 (20-day and 50-day simple moving averages), volatility (20-day rolling standard deviation), and daily_return (percentage change in adjusted closing price). These features captured temporal trends, smoothed short-term fluctuations, and quantified variability in stock prices. Stock symbols were numerically encoded to help the model identify patterns across different stocks. These features are further explained in [Appendix -@sec-feature-details]
+
 
 ## Data Limitations and Future Directions {#sec-data-limitations}
 
-While the cleaned dataset is robust and suitable for modeling, there are notable limitations. First, external factors such as macroeconomic indicators, earnings announcements, or industry-specific news are not included, despite their potential to significantly impact stock prices. Second, the interpolation of missing values assumes smooth price continuity, which may not fully account for abrupt market changes or high-impact events during non-trading days. The analysis is also limited to FAANG stocks, which, while influential, may not reflect broader market dynamics or trends that could indirectly affect these stocks. Expanding the dataset to include other major stocks or sectors could provide a more comprehensive view of market behavior. Furthermore, the models are designed for short-term forecasting, specifically for December 2024, and are not optimized for capturing longer-term trends or cyclical patterns.
+While the cleaned dataset is robust and suitable for modeling, several limitations remain. External factors, such as macroeconomic indicators, earnings announcements, or industry-specific news, are not included, despite their potential to significantly impact stock prices. The interpolation of missing values assumes smooth price continuity, which may not fully account for abrupt market changes or high-impact events occurring during non-trading days. Additionally, the analysis is restricted to FAANG stocks, which, although influential, may not capture broader market dynamics or indirect effects from other sectors. These limitations may reduce the model's ability to fully represent the complexities of the market.
 
-Lastly, while the engineered features effectively summarize historical trends, they may miss more complex interactions or latent patterns in stock price movements. Future analyses could incorporate additional data sources, such as macroeconomic indicators or sector-specific variables, to enhance predictive accuracy. Advanced feature engineering techniques, like seasonal decomposition or non-linear transformations, could also improve the models’ ability to capture nuanced market behaviors. Addressing these limitations would strengthen the robustness and generalizability of the analysis, offering deeper insights into FAANG stock dynamics.
+
+## Furutre Directions
+
+Future analyses could address these limitations by incorporating additional data sources, such as macroeconomic indicators or sector-specific variables, to enhance predictive accuracy. Expanding the dataset to include other major stocks or sectors could provide a more comprehensive view of market behavior and its impact on FAANG stocks. Advanced feature engineering techniques, such as seasonal decomposition, non-linear transformations, or incorporating time-varying covariates, could improve the models’ ability to capture complex interactions and nuanced market behaviors. These improvements would strengthen the robustness and generalizability of the analysis, offering deeper insights into both short- and long-term trends in FAANG stock dynamics.
+
 
 # Additional Model Details {#sec-model-details}
 
@@ -726,7 +703,7 @@ The XGBoost regression model was chosen for predicting FAANG stock prices in Dec
 
 Separate models for November and December were developed to capture the unique characteristics of stock price movements during these months. By training the November model using data up to October 31, 2024, and the December model using data up to November 30, 2024, we ensure that each model incorporates the most recent market information available for its respective forecasting period. This separation minimizes over-fitting to earlier trends and allows the December model to adapt to any shifts in market behavior or volatility observed in November.
 
-### Model Features
+### Model Features {#sec-feature-details}
 
 XGBoost was selected due to its ability to handle non-linear interactions and temporal dependencies, which are crucial for stock price prediction. Key engineered features include:
 
@@ -752,12 +729,13 @@ Unlike traditional time-series models such as ARIMA, which assume stationarity a
 ## Model Diagnostics {#sec-model-diagnostics}
 
 ### Feature Importance
+@fig-nov-feature-importance for the November model reveals that Lag_1 (the previous day's adjusted closing price) is the most influential predictor, accounting for the majority of the model's decision-making. Rolling_Mean_7 (the 7-day rolling average) is the second most significant feature, albeit with a much smaller contribution. Other features, such as daily_return, sma_20, and volatility, show negligible impact. This indicates that the model primarily relies on short-term trends and immediate past values to predict stock prices, reflecting its focus on short-term forecasting.
 ```{r}
 #| context: global
 #| echo: false
 #| eval: true
-#| label: fig-feature-importance
-#| fig-cap: "Feature Importance"
+#| label: fig-nov-feature-importance
+#| fig-cap: "November Feature Importance"
 #| warning: false
 #| cache: false
 
@@ -790,15 +768,54 @@ xgb.plot.importance(
   main = "Feature Importance for November Model"
 )
 ```
-@fig-feature-importance provides a clear visualization of the relative contributions of the predictive variables used in the XGBoost model. The variable Lag_1, which represents the previous day's adjusted price, demonstrates the highest importance, significantly outweighing all other features. This indicates that the previous day's price is a critical factor in predicting the current adjusted price, aligning with the strong autocorrelation often observed in time series data like stock prices. Rolling_Mean_7, the 7-day rolling mean of adjusted prices, also contributes meaningfully, suggesting that short-term trends influence the model's predictions. The remaining features, including daily_return, symbol_encoded, and various moving averages (sma_20, sma_50) and volatility, show minimal importance in this model. This disparity suggests that the model heavily relies on recent past prices and short-term trends while assigning relatively less weight to longer-term trends or encoded categorical variables. Future iterations of the model could explore whether these less important features can be refined or excluded to simplify the model further without impacting its performance.
+
+#### December Model
+@fig-dec-feature-importance reveals that for the December model, Lag_1 remains the dominant feature, followed by Rolling_Mean_7, which has a slightly larger contribution compared to the November model. The remaining features, including daily_return, sma_20, and volatility, exhibit minimal importance, similar to the November model. The heavy reliance on short-term features like Lag_1 and Rolling_Mean_7 underscores the model's emphasis on recent price trends for prediction, while broader, longer-term patterns play a negligible role in its forecasting approach.
+```{r}
+#| context: global
+#| echo: false
+#| eval: true
+#| label: fig-dec-feature-importance
+#| fig-cap: "Feature Importance for December Model"
+#| warning: false
+#| cache: false
+
+
+
+
+  dec_train <- analysis_data %>%
+    filter(as.Date(date) <= as.Date("2024-11-30"))
+
+  X_train_dec <- dec_train %>%
+    select(Lag_1, Rolling_Mean_7, sma_20, sma_50, volatility, daily_return, symbol_encoded) %>%
+    as.matrix()
+
+
+# Generate feature importance matrix for December model
+importance_matrix_dec <- xgb.importance(
+  feature_names = colnames(X_train_dec),
+  model = dec_model
+)
+
+# Plot feature importance for December model
+xgb.plot.importance(
+  importance_matrix_dec,
+  rel_to_first = TRUE,
+  top_n = 10,
+  main = "Feature Importance for December Model"
+)
+
+```
 
 
 ### Residual Analysis
+#### November Model
+@fig-nov-residual-analysis evaluates the November model's performance by analyzing the residuals (errors) against the predicted (fitted) values. The residuals vs. fitted values plot for the November model shows that residuals are evenly distributed around zero for most fitted values, suggesting that the model captures the central trend of the data well. However, there are slight patterns in residuals at higher fitted values, indicating some systematic deviations that the model may not fully account for. The majority of residuals fall within a narrow range, suggesting good model accuracy overall, but some outliers indicate the potential influence of unmodeled factors or noise in the data.
 ```{r}
 #| echo: false
 #| eval: true
-#| label: fig-residual-analysis
-#| fig-cap: "Residual vs. Fitted Values"
+#| label: fig-nov-residual-analysis
+#| fig-cap: "Residuals vs. fitted values for the November model. The residuals are centered around zero, indicating accurate predictions overall, though some systematic deviations and outliers are observed at higher fitted values."
 #| warning: false
 
 # November Model Training
@@ -817,36 +834,103 @@ residuals_nov <- y_train_nov - predict(nov_model, X_train_nov)
 ggplot(data.frame(Fitted = predict(nov_model, X_train_nov), Residuals = residuals_nov), aes(x = Fitted, y = Residuals)) +
   geom_point(alpha = 0.5) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
-  labs(title = "Residuals vs. Fitted Values", x = "Fitted Values", y = "Residuals") +
+  labs(x = "Fitted Values", y = "Residuals") +
   theme_minimal()
 
 ```
 
-@fig-residual-analysis evaluates the model's performance by analyzing the residuals (errors) against the predicted (fitted) values. The residuals appear randomly scattered around the red dashed line at zero, which is a good indication that the model does not suffer from significant bias. However, the spread of residuals does not remain constant, with some visible heteroscedasticity (changing variance) at higher fitted values. This suggests that the model's prediction errors may increase for certain ranges of the target variable, indicating a potential need to address variance issues or reevaluate the model's assumptions.
-
-### Error Distribution
+#### December Model
+@fig-dec-residual-analysis reveals a similar pattern to the November model, with residuals mostly centered around zero. However, the residuals exhibit slightly tighter clustering, reflecting the December model's reliance on flatter trends in the data. Outliers are still present, but their distribution is more uniform across fitted values. This tighter residual range suggests the December model captures the data's central trend but is less sensitive to short-term volatility, as reflected in the flat December predictions.
 ```{r}
 #| echo: false
 #| eval: true
-#| label: fig-residual-distrib
-#| fig-cap: "Residual Distribution"
+#| label: fig-dec-residual-analysis
+#| fig-cap: "Residuals vs. fitted values for the December model. The residuals are more tightly clustered around zero, reflecting the model's reliance on flatter trends but with less sensitivity to short-term volatility."
 #| warning: false
 
-ggplot(data.frame(Residuals = residuals_nov), aes(x = Residuals)) +
-  geom_histogram(binwidth = 0.01, fill = "blue", alpha = 0.7) +
-  labs(title = "Residual Distribution", x = "Residuals", y = "Frequency") +
+
+# Prepare December training features (X_train_dec) and labels (y_train_dec)
+dec_train <- analysis_data %>%
+  filter(as.Date(date) <= as.Date("2024-11-30"))
+
+X_train_dec <- dec_train %>%
+  select(Lag_1, Rolling_Mean_7, sma_20, sma_50, volatility, daily_return, symbol_encoded) %>%
+  as.matrix()
+y_train_dec <- as.numeric(dec_train$adjusted)
+
+# Calculate residuals for the December model
+residuals_dec <- y_train_dec - predict(dec_model, X_train_dec)
+
+# Create Residuals vs. Fitted plot for December model
+ggplot(data.frame(Fitted = predict(dec_model, X_train_dec), Residuals = residuals_dec), aes(x = Fitted, y = Residuals)) +
+  geom_point(alpha = 0.5) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(
+    x = "Fitted Values",
+    y = "Residuals"
+  ) +
   theme_minimal()
 
 ```
 
-@fig-residual-distrib shows the frequency of residuals (errors) from the model's predictions. The distribution is approximately bell-shaped and centered around zero, suggesting that the residuals are fairly normally distributed. This is a good indication that the model does not exhibit significant bias and aligns with the assumption of normally distributed errors in regression. However, there are slight tails on both sides, indicating occasional larger prediction errors, which may warrant further investigation to determine if these are due to outliers or systematic issues in the model.
 
-### Prediction vs. Actual Values
+### Error Distribution
+#### November Model
+```{r}
+#| echo: false
+#| eval: true
+#| label: fig-nov-error-distrib
+#| fig-cap: "Histogram of residuals for the November model. Residuals are centered around zero with most values falling within -2.5 to 2.5, reflecting accurate predictions with minimal systematic error."
+#| warning: false
+
+# Calculate residuals for the November model
+residuals_nov <- y_train_nov - predict(nov_model, X_train_nov)
+
+# Create a histogram for residuals
+ggplot(data.frame(Residuals = residuals_nov), aes(x = Residuals)) +
+  geom_histogram(binwidth = 0.1, color = "black", fill = "blue", alpha = 0.7) +
+  labs(
+    title = "Error Distribution for November Model",
+    x = "Residuals",
+    y = "Frequency"
+  ) +
+  theme_minimal()
+
+```
+@fig-nov-error-distrib reveals that error distribution for the November model is approximately normal, with residuals centered around zero and a slight skewness at the tails. Most residuals are concentrated within the range of -2.5 to 2.5, indicating the model predicts stock prices with a high degree of accuracy. However, the presence of a few outliers suggests the model struggles with certain extreme price movements.
+
+```{r}
+#| echo: false
+#| eval: true
+#| label: fig-dec-error-distribution
+#| fig-cap: "Histogram of residuals for the December model. Residuals are tightly centered around zero, indicating consistent predictions but limited sensitivity to abrupt stock price changes."
+#| warning: false
+#| cache: false
+
+# Calculate residuals for the December model
+residuals_dec <- y_train_dec - predict(dec_model, X_train_dec)
+
+# Create a histogram for residuals
+ggplot(data.frame(Residuals = residuals_dec), aes(x = Residuals)) +
+  geom_histogram(binwidth = 0.1, color = "black", fill = "blue", alpha = 0.7) +
+  labs(
+    title = "Error Distribution for December Model",
+    x = "Residuals",
+    y = "Frequency"
+  ) +
+  theme_minimal()
+
+```
+@fig-dec-error-distrib shows an approximate normal error distribution for the December Model, with residuals tightly clustered around zero. Compared to the November model, the distribution is slightly narrower, suggesting reduced variability in prediction errors. This reflects the December model's reliance on flatter trends and its inability to capture sharp price movements, leading to smaller but more consistent errors.
+
+
+### Prediction vs. Actual Values (November)
+@fig-model-accuracy demonstrates a near-perfect alignment between predicted and actual stock prices, as indicated by the data points closely following the 45-degree reference line. This suggests that the model accurately captures the stock price trends with minimal deviation. The tight clustering of points along the line reflects the model's strong predictive performance, supported by the high R² value observed in the evaluation metrics.
 ```{r}
 #| echo: false
 #| eval: true
 #| label: fig-model-accuracy
-#| fig-cap: "Predicted vs. Actual Values"
+#| fig-cap: "Predicted vs. actual stock prices for the November model. The points closely follow the 45-degree line, indicating strong predictive accuracy and alignment with actual values."
 #| warning: false
 
 ggplot(data.frame(Predicted = predict(nov_model, X_train_nov), Actual = y_train_nov), aes(x = Predicted, y = Actual)) +
@@ -856,105 +940,102 @@ ggplot(data.frame(Predicted = predict(nov_model, X_train_nov), Actual = y_train_
   theme_minimal()
 
 ```
-@fig-model-accuracy demonstrates the model's accuracy by comparing its predictions with the true target values. The points align closely along the red dashed diagonal line, indicating a high level of agreement between the predicted and actual values. This suggests that the model performs well in predicting the adjusted stock prices with minimal error. The tight clustering along the diagonal further supports the reliability of the model's output, with no significant deviations or systematic bias observed in the predictions.
+Such visualization cannot be replicated for the December model because the predicted values for December are based entirely on placeholder dates, with no actual stock price data available for comparison. As such, there are no actual values for December against which to evaluate the predictions, making it impossible to construct a meaningful predicted vs. actual plot.
 
 ## Model Performance and Limitations
 
-### Model Performance
-Based on the evaluation metrics and diagnostic checks performed on both the November and December XGBoost models, we can conclude that the models demonstrate strong performance and reliability in forecasting FAANG stock prices. The close alignment between the observed stock prices and the predicted values, as evidenced by the residual analysis and predicted vs. actual plots, indicates that the models are well-calibrated. This calibration ensures that the models accurately capture both the central trends and variability in stock prices across the FAANG group. Such alignment is critical for financial forecasting, where precise predictions are required to make informed investment decisions.
+### November Model Performance
+The November model demonstrates strong predictive accuracy, as shown by the close alignment between predicted and actual values along the 45-degree reference line. Residuals are centered around zero and follow an approximately normal distribution, with most residuals falling within the range of -2.5 to 2.5. These results indicate that the model effectively captures short-term trends and variability in FAANG stock prices. Feature importance analysis highlights Lag_1 (previous day’s adjusted price) and Rolling_Mean_7 (7-day rolling average) as the most influential predictors, confirming the model's ability to leverage recent price dynamics for accurate forecasting. However, the model exhibits limitations in capturing extreme price movements or unusual events not reflected in the historical data. Slight patterns in residuals at higher fitted values and outliers in the error distribution suggest that the model struggles to account for high-impact or sector-specific factors, limiting its generalizability to unexpected market conditions.
 
-The residual distribution further supports the robustness of the models, with residuals centered around zero and following an approximately normal distribution. This suggests that the models do not suffer from significant bias and handle the inherent noise in financial time-series data effectively. The use of engineered features, including lagged values, rolling averages, and volatility measures, has allowed the models to capture both short- and medium-term trends in stock price movements, contributing to their high predictive accuracy.
 
-The decision to develop separate models for November and December has further enhanced performance by tailoring the forecasts to the unique market dynamics of each period. The November model, trained on data up to October 31, 2024, successfully captures trends leading into November, while the December model, trained on data up to November 30, 2024, incorporates additional market shifts and variability observed during November trading. This approach ensures that each model reflects the most recent data available, improving the reliability of their respective forecasts.
+### December Model Performance
+The December model, trained on data up to November 30, 2024, shows significant limitations in its predictive capabilities. Residuals are tightly clustered around zero, with a narrower error distribution compared to the November model. While this suggests minimal noise in predictions, it reflects an overreliance on flat trends, resulting in an inability to capture dynamic stock price movements. The flat slopes in predicted values, combined with the absence of actual December stock price data for evaluation, underscore the model’s failure to incorporate potential market shifts, such as post-election sentiment or end-of-year trading dynamics. Similar to the November model, feature importance analysis identifies Lag_1 and Rolling_Mean_7 as dominant predictors. However, the December model’s heavy dependence on these features exacerbates its inability to account for broader market influences, leading to overly static predictions.
 
-Additionally, feature importance analysis highlights the predictive power of key variables such as **Lag_1**, **Rolling_Mean_7**, and **volatility**, which play critical roles in explaining stock price movements. The robustness of the models is further validated by their ability to generalize across multiple FAANG stocks, as demonstrated by their performance on unseen data.
+
 
 ### Model Limitations
 While the November and December XGBoost models demonstrate strong performance, several limitations should be noted:
 
-1. **Assumption of Stationarity**: Although XGBoost can handle non-stationary data, the models rely on historical data patterns to forecast future trends. Sudden market shocks, such as regulatory changes or geopolitical events, may lead to deviations from these patterns, reducing predictive accuracy.
+1. **Overreliance on Short-Term Features**: Both models heavily depend on Lag_1 and Rolling_Mean_7, which focus on short-term trends. While effective for stable markets, this reliance limits their ability to predict abrupt changes or long-term patterns influenced by broader macroeconomic or sector-specific factors.
 
-2. **Feature Representation**: Despite the inclusion of lagged values, rolling averages, and volatility measures, the models may not fully capture all relevant factors influencing stock prices, such as macroeconomic indicators, earnings reports, or sector-specific news.
+2. **Exclusion of External Influences**: Neither model incorporates external variables such as macroeconomic indicators, earnings reports, geopolitical events, or industry-specific news, which are critical in driving stock price movements. This omission reduces the models' capacity to adapt to dynamic market conditions.
 
-3. **Overfitting Risk**: Although regularization techniques were applied, there remains a risk of overfitting due to the high-dimensional feature space and temporal correlations in the data. This could result in reduced generalizability, particularly for unseen market conditions.
+3. **Flat Predictions for Certain Periods**: The flat predictions observed in the December model highlight a broader limitation: both models assume continuity in trends and fail to account for potential volatility or sudden market shocks. This may be a result of insufficient diversity in the feature set.
 
-4. **Limited Interpretability**: While feature importance provides some insights, XGBoost models are inherently black-box in nature. This limits their ability to provide clear explanations for predictions, which may be important for stakeholders seeking more interpretive models.
+4. **Lack of Cross-Validation Across Time Periods**: While each model is trained separately on its respective time frame, there is no mechanism to ensure their consistency across overlapping or adjacent periods. This could lead to discrepancies when transitioning from November to December predictions.
 
-5. **Data Gaps and Extrapolation**: The interpolation of missing data, particularly for weekends and holidays, assumes continuity in stock price movements. This may introduce inaccuracies, especially if significant events occur during non-trading days.
+5. **Sensitivity to Data Availability**: The models rely entirely on historical stock price data, meaning any gaps or interpolation inaccuracies could propagate into the predictions. This limitation is particularly relevant for the December model, where placeholder dates and interpolated values were used for prediction.
 
-6. **Short-Term Forecast Horizon**: The models are designed to forecast stock prices for December 2024. Their utility diminishes for longer-term predictions, where additional dynamics and external variables may play a larger role.
-
-Overall, the November and December XGBoost models exhibit strong predictive performance and reliability, underpinned by thorough calibration, effective feature engineering, and tailored training periods. However, their performance is subject to certain limitations, including sensitivity to market shocks and the inherent challenges of modeling complex financial data. Despite these constraints, the models provide meaningful insights into FAANG stock dynamics and serve as a valuable tool for understanding and predicting market trends during these critical months.
+Addressing these limitations in future analysis, such as incorporating external data and improving the feature set to capture dynamic market behaviors, would enhance the robustness and applicability of the models.
 
 # Surveys, Sampling, and Observational Data
 
 ## Nature of Observational Data
 
-The data used in this study is observational, comprising naturally occurring financial transactions within the stock market. Unlike experimental or survey data, observational data in financial markets is influenced by external factors beyond experimental control, such as macroeconomic policies, geopolitical events, and investor sentiment. This introduces complexities in distinguishing causality from correlation in stock price movements, as unmeasured confounding factors may bias interpretations. Observational data provides a high-frequency, granular perspective of market dynamics. However, its reliance on historical events as proxies for predictive features limits its ability to account for unprecedented external shocks or changes in market behavior, such as those induced by elections or global crises.
+The stock price data used in this study is observational, derived from naturally occurring financial transactions in the stock market. Unlike experimental or survey data, observational data reflects real-world behaviors influenced by external factors such as macroeconomic policies, geopolitical events, and investor sentiment. This complexity makes it challenging to distinguish causality from correlation, as unmeasured confounding variables can bias interpretations. For example, stock price movements during the 2024 U.S. Presidential Election may reflect both direct market reactions and broader economic conditions.
+
+While observational data offers a granular, high-frequency view of stock market dynamics, it relies entirely on historical trends as proxies for predictive features. This approach limits its ability to account for unprecedented shocks, such as global crises or election-related volatility, which may diverge from historical patterns. Furthermore, temporal dependence—where current prices are influenced by past values—requires careful feature engineering, such as lagged variables (Lag_1) and rolling averages (Rolling_Mean_7), to capture meaningful trends.
 
 ## Sampling Frame and Representativeness
+The sampling frame encompasses all trading days from January 2020 to November 2024, providing a comprehensive record of FAANG stock activity during a period of significant market and political events. While this dataset ensures detailed coverage of the technology sector, it is constrained by its sector-specific focus, which limits generalizability to other industries or broader market trends.
 
-The sampling frame for this analysis includes all trading days from January 2020 through November 2024, capturing a comprehensive record of FAANG stock activity. This time period reflects critical phases of economic recovery, technological advancement, and significant political events, such as the 2024 U.S. Presidential Election. While this dataset ensures comprehensive coverage of FAANG stocks, it remains constrained by sector-specific focus.
+### Strengths and Weaknesses
 
-### Strengths
+A key strength of the dataset is its high-frequency nature, which allows the analysis to capture both short-term fluctuations and long-term trends. FAANG stocks, as market leaders, serve as valuable indicators of overall economic conditions and investor sentiment. However, the focus on a single sector introduces limitations in generalizability, as trends within technology stocks may not reflect behaviors across other industries. Furthermore, the imputation of placeholder prices for December 2024 ensures continuity but risks underestimating volatility, particularly in the context of post-election market adjustments.
 
-- **High-Frequency Coverage**: Daily data provides detailed insights into short-term fluctuations and longer-term trends.
-- **Sector Focus**: FAANG stocks, as market leaders, act as strong indicators of broader economic conditions and investor sentiment.
+## Integrating Surveys with Observational Data
 
-### Limitations
-
-- **Sector Bias**: Focusing solely on FAANG stocks limits the generalizability of findings to other industries or market segments.
-- **Data Gaps**: Placeholder prices for December 2024, generated through imputation, may underestimate volatility or fail to capture post-election market adjustments accurately.
-
-## Integrating Surveys: A Complementary Perspective
-
-While stock prices offer a quantitative view of market behavior, investor sentiment surveys add a qualitative dimension, revealing expectations and perceptions that often precede observed price movements. By integrating survey methodologies, the analysis can better contextualize and interpret stock price dynamics during critical events like elections.
+Surveys provide forward-looking indicators that enhance the interpretation of stock price trends. For example, during significant events like the 2024 U.S. Presidential Election, surveys could capture investor sentiment regarding anticipated market impacts, which may not yet be reflected in observed price movements.
 
 ### Proposed Survey Design
 
 To complement the observational stock data, investor sentiment surveys could include questions such as:
+
 - **Market Confidence**: “Do you expect FAANG stock prices to increase, decrease, or remain stable over the next month?”
 - **Election Impact**: “How has the 2024 U.S. Presidential Election influenced your investment decisions?”
 - **Risk Appetite**: “What is your likelihood of investing in technology stocks in the current market climate?”
 
-### Methodological Considerations
+### Methodological Considerations:
 
-- **Sampling and Representativeness**: Stratify respondents by demographics, portfolio size, and investment experience to ensure diverse market perspectives.
-- **Weighting**: Use post-survey weighting to align survey demographics with actual investor populations, similar to post-stratification in traditional surveys.
+- **Sampling and Representativeness**:  Stratify respondents by demographics, investment experience, and portfolio size to ensure diverse perspectives.
+- **Weighting**: Apply post-survey weighting to align survey demographics with actual investor populations, similar to post-stratification in traditional surveys.
 
 ### Strengths and Limitations
 
-#### Strengths:
-- **Forward-Looking Insights**: Surveys capture investor sentiment that may not yet be reflected in stock prices.
-- **Diverse Perspectives**: Stratified sampling ensures representation across institutional and retail investors.
+Advantages of Survey Integration:
 
-#### Limitations:
-- **Response Bias**: Survey respondents may overstate optimism or pessimism, especially during volatile periods.
-- **Sampling Complexity**: Ensuring representativeness across various investor demographics is resource-intensive.
+- **Contextualization**: Surveys can help interpret stock price trends, particularly around major events like elections.
+- **Predictive Power**: Sentiment data may improve model accuracy by capturing market expectations and behavioral drivers.
+
+Limitations of Survey Integration: 
+
+- **Response Bias**: Survey participants may exaggerate optimism or pessimism, especially during volatile periods.
+- **Sampling Complexity**: Ensuring representativeness across demographics, such as institutional vs. retail investors, requires significant resources and methodological rigor
 
 ## Parallels Between Observational Data and Surveys
 
-Observational stock data shares several structural similarities with survey methodologies:
-- **Stratification**: The division of data by stock symbol mirrors stratified sampling in surveys, allowing for stock-specific analysis while maintaining aggregate insights.
-- **Imputation**: Just as survey non-responses require careful imputation to avoid bias, missing stock data necessitates robust methods to estimate gaps, such as forward/backward filling or time-series modeling.
-- **Weighting**: Future models could incorporate macroeconomic indicators (e.g., GDP, interest rates) as weights, akin to post-stratification in survey data, to adjust for external market influences.
+Observational stock data and surveys share structural similarities that make their integration intuitive and mutually reinforcing:
+
+- **Stratification**: The division of stock data by symbol mirrors stratified sampling in surveys, allowing for detailed analysis at the stock level while preserving aggregate insights.
+- **Imputation**: Both surveys and stock data require robust imputation methods to address missing values. For example, placeholder stock prices for December 2024 were interpolated using forward and backward filling, similar to imputing missing survey responses.
+- **Weighting**: Models could incorporate macroeconomic indicators, such as GDP or interest rates, as weights to adjust for external market influences, akin to post-stratification in surveys.
+
 
 ## Addressing Data Challenges
 
-- **Temporal Dependence**: Stock prices exhibit temporal dependence, where current values are influenced by past trends. To mitigate this, predictive features such as lagged prices (`Lag_1`) and rolling averages (`Rolling_Mean_7`) are included, capturing both momentum and smoothed trends.
+- **Temporal Dependence**: Stock prices are influenced by past trends. To mitigate this, features such as lagged prices (Lag_1) and rolling averages (Rolling_Mean_7) were used to capture momentum and smoothed trends effectively. However, these features may miss sudden shifts caused by external shocks or policy changes.
 
-- **Imputation for Missing Data**: Imputation was used to fill missing December 2024 values, ensuring data continuity. However, this approach risks underestimating potential volatility or masking significant market responses to external events, such as post-election dynamics. Future work could leverage time-series forecasting models to improve imputation accuracy.
+- **Imputation for Missing Data**: Missing December 2024 values were filled through interpolation to ensure continuity. While necessary for analysis, this approach may underestimate volatility or fail to account for post-election market adjustments. Advanced time-series models could improve the accuracy of such imputations.
 
-- **Observational Bias**: External confounders, such as Federal Reserve policies, geopolitical tensions, or earnings reports, can obscure causal relationships. Including predictors that account for such factors in future models could mitigate these biases.
+- **Observational Bias**: Stock data is inherently influenced by external confounders, such as Federal Reserve policies, geopolitical tensions, or major corporate announcements. These confounders obscure causal relationships. Future models could include external predictors to better account for such influences, improving robustness.
 
 ## Recommendations for Future Work
 
-1. **Survey Integration**: Combine investor sentiment surveys with stock data to enhance interpretability and predictive power.
-2. **Expanding Scope**: Extend the analysis to non-FAANG sectors for broader market generalizability.
-3. **Improved Imputation**: Apply advanced time-series models to better estimate missing values and capture expected volatility.
+1. **Survey Integration**: Combine investor sentiment surveys with stock data to capture qualitative dimensions of market behavior. Surveys can reveal forward-looking insights, such as investor confidence, that improve interpretability and predictive power.
+2. **Expanding Scope**: Extend the analysis to include sectors beyond FAANG stocks to enhance generalizability and uncover trends across diverse industries.
+3. **Improved Imputation**: Use dynamic time-series models to address missing values more accurately and capture volatility during critical events like elections or earnings announcements.
 
-By addressing these challenges and integrating survey methodologies, future analyses can provide a richer understanding of market dynamics, improving the robustness and applicability of findings.
-
+By addressing these challenges and integrating surveys with observational data, future analyses can achieve a richer, more nuanced understanding of market dynamics. Such hybrid approach provides a comprehensive framework for interpreting stock price trends, making predictions more robust and actionable, especially during periods of significant economic or political change.
 
 
 \newpage
