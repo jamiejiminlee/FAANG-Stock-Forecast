@@ -1,12 +1,11 @@
 #### Preamble ####
-# Purpose: Models... [...UPDATE THIS...]
-# Author: Rohan Alexander [...UPDATE THIS...]
-# Date: 11 February 2023 [...UPDATE THIS...]
-# Contact: rohan.alexander@utoronto.ca [...UPDATE THIS...]
+# Purpose: Constructs november and december models for predicting stock prices using xgboost
+# Author: Jamie Lee
+# Date: 2 December 2024
+# Contact: jamiejimin.lee@mail.utoronto.ca
 # License: MIT
-# Pre-requisites: [...UPDATE THIS...]
-# Any other information needed? [...UPDATE THIS...]
-
+# Pre-requisites: analysis_data.parquet
+# Any other information needed? N/A
 
 library(xgboost)
 library(dplyr)

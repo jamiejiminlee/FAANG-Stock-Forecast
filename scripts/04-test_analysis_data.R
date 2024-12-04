@@ -1,11 +1,11 @@
 #### Preamble ####
-# Purpose: Tests... [...UPDATE THIS...]
-# Author: Rohan Alexander [...UPDATE THIS...]
-# Date: 26 September 2024 [...UPDATE THIS...]
-# Contact: rohan.alexander@utoronto.ca [...UPDATE THIS...]
+# Purpose: Tests data quality of analysis_data.parquet
+# Author: Jamie Lee
+# Date: 4 December 2024
+# Contact: jamiejimin.lee@mail.utoronto.ca
 # License: MIT
-# Pre-requisites: [...UPDATE THIS...]
-# Any other information needed? [...UPDATE THIS...]
+# Pre-requisites: load 'testthat' and analysis_data.parquet
+# Any other information needed? N/A
 
 # Libraries
 library(testthat)

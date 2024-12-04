@@ -38,13 +38,13 @@ analysis_data <- read_parquet("/Users/jamielee/TechStockForecast/data/02-analysi
 
 # Introduction
 
-The performance of FAANG stocks - **Meta (META)**, **Amazon (AMZN)**, **Apple (AAPL)**, **Netflix (NFLX)**, and **Google (GOOGL)**, has become a cornerstone of global financial markets, reflecting broader economic trends and investor sentiment. These companies represent diverse sectors, from e-commerce and technology to entertainment and digital advertising, making their stock price movements critical indicators of market health. In the context of the 2024 post-pandemic recovery and a pivotal United States Presidential Election, understanding and predicting FAANG stock price trends is particularly relevant for investors and policymakers alike.
+The performance of FAANG stocks - **Meta (META)**, **Amazon (AMZN)**, **Apple (AAPL)**, **Netflix (NFLX)**, and **Google (GOOGL)**, has become a cornerstone of global financial markets, reflecting broader economic trends and investor sentiment. These companies represent diverse sectors, from e-commerce and technology to entertainment and digital advertising, making their stock price movements critical indicators of market health. As the world navigates the post-pandemic recovery and the uncertainties surrounding the 2024 United States Presidential Election, understanding and forecasting FAANG stock prices is both timely and consequential for investors and policymakers alike.
 
-This paper focuses on historical stock price data from years 2020 to 2024, sourced from Yahoo Finance [@yahoofinance] to develop predictive models for FAANG stock prices in November and December 2024. Utilizing XGBoost regression models, we analyze historical trends and engineered features, including lagged prices, moving averages, and volatility measures, to forecast stock price movements. These predictions provide valuable insights into the behavior of FAANG stocks during critical periods, such as post-election market adjustments, and highlight opportunities and risks for short-term and long-term investment strategies.
+This paper examines FAANG stock price trends using historical data spanning 2020 to 2024, sourced from Yahoo Finance [@yahoofinance], to develop predictive models for November and December 2024. Utilizing XGBoost regression, the analysis leverages engineered features, including lagged prices, moving averages, and volatility measures, to predict adjusted closing prices for these stocks during the study period. By capturing trends and identifying potential risks and opportunities, these models provide actionable insights for short- and long-term investment strategies. 
 
 The primary estimand of this study is the predicted adjusted stock price for each FAANG company during November and December 2024, derived from features constructed using historical price trends and technical indicators. Our findings reveal that predictions for November align closely with observed trends for most stocks, reflecting the model's ability to capture short-term dynamics. However, discrepancies, such as the underestimation of NFLX prices, underscore the influence of unique stock-specific factors. For December, predictions indicate a flat trajectory across stocks, likely influenced by data limitations and post-election market sentiment.
 
-The implications of these findings extend beyond price predictions, offering a framework to evaluate market behavior in response to external factors such as elections and economic conditions. The remainder of this paper is organized as follows: Section 2 describes the data sources, variables, and preprocessing steps; Section 3 outlines the modeling approach and feature engineering strategies; Section 4 presents the results and discusses trends in predicted stock prices; and Section 5 addresses the implications and limitations of the findings, with additional model diagnostics detailed in the [Appendix -@sec-model-details].
+The implications of these findings extend beyond price predictions, offering a framework to evaluate market behavior in response to external factors such as elections and economic conditions. By contextualizing these trends within the broader market environment, this analysis contributes to a deeper understanding of market dynamics during critical periods. The remainder of this paper is organized as follows: @sec-data describes the data sources, variables, and preprocessing steps; @sec-model outlines the modeling approach and feature engineering strategies; @sec-results presents the results and discusses trends in predicted stock prices; and @sec-discussion addresses the implications and limitations of the findings, with additional model diagnostics detailed in the [Appendix -@sec-model-details].
 
 
 # Data {#sec-data}
@@ -469,7 +469,7 @@ ggplot(dec_results, aes(x = as.Date(date), y = predicted_adjusted, color = symbo
     axis.text.x = element_text(angle = 45, hjust = 1)
   )
 ```
-@fig-dec-pred reveals flat stock price trends for all FAANG companies, with no significant fluctuations throughout the month. Netflix (NFLX) is projected to maintain the highest price, exceeding $875, while Google (GOOGL) consistently exhibits the lowest price, just above $200. Apple (AAPL), Amazon (AMZN), and Meta (META) display similar stability, with their prices clustered between $250 and $600. These flat trends suggest that the model struggles to capture potential market dynamics and daily volatilities, likely due to the absence of real-world influences such as macroeconomic shifts or investor sentiment in the input data. Further discussion on these limitations is provided in [Appendix -@sec-model-limitations].
+@fig-dec-pred reveals flat stock price trends for all FAANG companies, with no significant fluctuations throughout the month. Netflix (NFLX) is projected to maintain the highest price, exceeding $875, while Google (GOOGL) consistently exhibits the lowest price, just above $200. Apple (AAPL), Amazon (AMZN), and Meta (META) display similar stability, with their prices clustered between $250 and $600. These flat trends suggest that the model struggles to capture potential market dynamics and daily volatilities, likely due to the absence of real-world influences such as macroeconomic shifts or investor sentiment in the input data. Further discussion on these limitations is provided in [Appendix -@sec-model-perform-limit].
 
 
 
@@ -695,7 +695,7 @@ Future analyses could address these limitations by incorporating additional data
 
 # Additional Model Details {#sec-model-details}
 
-## Model Justification - Further Details
+## Model Justification - Further Details {#sec-model-justification}
 
 The XGBoost regression model was chosen for predicting FAANG stock prices in December 2024 due to its ability to model complex non-linear relationships, which are common in financial time series data. Given the dynamic and time-sensitive nature of stock prices, the November and December models were trained separately to ensure that predictions account for evolving market trends and feature importance within each specific period.
 
@@ -939,7 +939,7 @@ ggplot(data.frame(Predicted = predict(nov_model, X_train_nov), Actual = y_train_
 ```
 Such visualization cannot be replicated for the December model because the predicted values for December are based entirely on placeholder dates, with no actual stock price data available for comparison. As such, there are no actual values for December against which to evaluate the predictions, making it impossible to construct a meaningful predicted vs. actual plot.
 
-## Model Performance and Limitations
+## Model Performance and Limitations {#sec-model-perform-limit}
 
 ### November Model Performance
 The November model demonstrates strong predictive accuracy, as shown by the close alignment between predicted and actual values along the 45-degree reference line. Residuals are centered around zero and follow an approximately normal distribution, with most residuals falling within the range of -2.5 to 2.5. These results indicate that the model effectively captures short-term trends and variability in FAANG stock prices. Feature importance analysis highlights Lag_1 (previous day’s adjusted price) and Rolling_Mean_7 (7-day rolling average) as the most influential predictors, confirming the model's ability to leverage recent price dynamics for accurate forecasting. However, the model exhibits limitations in capturing extreme price movements or unusual events not reflected in the historical data. Slight patterns in residuals at higher fitted values and outliers in the error distribution suggest that the model struggles to account for high-impact or sector-specific factors, limiting its generalizability to unexpected market conditions.
@@ -950,7 +950,7 @@ The December model, trained on data up to November 30, 2024, shows significant l
 
 
 
-### Model Limitations
+### Model Limitations 
 While the November and December XGBoost models demonstrate strong performance, several limitations should be noted:
 
 1. **Overreliance on Short-Term Features**: Both models heavily depend on Lag_1 and Rolling_Mean_7, which focus on short-term trends. While effective for stable markets, this reliance limits their ability to predict abrupt changes or long-term patterns influenced by broader macroeconomic or sector-specific factors.

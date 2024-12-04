@@ -1,11 +1,11 @@
 #### Preamble ####
-# Purpose: Cleans the raw plane data recorded by two observers..... [...UPDATE THIS...]
-# Author: Rohan Alexander [...UPDATE THIS...]
-# Date: 6 April 2023 [...UPDATE THIS...]
-# Contact: rohan.alexander@utoronto.ca [...UPDATE THIS...]
+# Purpose: Cleans and prepares the raw FAANG stock data obtained from Yahoo Finance for predictive modeling
+# Author: Jamie Lee
+# Date: 30 November 2024
+# Contact: jamiejimin.lee@mail.utoronto.ca
 # License: MIT
-# Pre-requisites: [...UPDATE THIS...]
-# Any other information needed? [...UPDATE THIS...]
+# Pre-requisites: raw_data.csv
+# Any other information needed? N/A
 
 # Libraries
 library(dplyr)

@@ -1,17 +1,15 @@
 #### Preamble ####
-# Purpose: Simulates a dataset of Australian electoral divisions, including the 
-  #state and party that won each division.
-# Author: Rohan Alexander
-# Date: 26 September 2024
-# Contact: rohan.alexander@utoronto.ca
+# Purpose: Simulates a dataset of FAANG stock prices
+# Author: Jamie Lee
+# Date: 30 November 2024
+# Contact: jamiejimin.lee@mail.utoronto.ca
 # License: MIT
 # Pre-requisites: The `tidyverse` package must be installed
-# Any other information needed? Make sure you are in the `starter_folder` rproj
+# Any other information needed? N/A
 
 
 # Libraries
-library(dplyr)
-library(lubridate)
+library(tidyverse)
 
 # Set random seed for reproducibility
 set.seed(42)
