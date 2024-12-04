@@ -899,7 +899,7 @@ ggplot(data.frame(Residuals = residuals_nov), aes(x = Residuals)) +
 ```{r}
 #| echo: false
 #| eval: true
-#| label: fig-dec-error-distribution
+#| label: fig-dec-error-distrib
 #| fig-cap: "Histogram of residuals for the December model. Residuals are tightly centered around zero, indicating consistent predictions but limited sensitivity to abrupt stock price changes."
 #| warning: false
 #| cache: false
