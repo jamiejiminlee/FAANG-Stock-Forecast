@@ -29,6 +29,8 @@ library(zoo)
 library(scales)
 library(reshape2)
 library(yardstick)
+library(tidyquant)
+library(knitr)
 
 analysis_data <- read_parquet("/Users/jamielee/TechStockForecast/data/02-analysis_data/analysis_data.parquet")
 ```
@@ -91,7 +93,7 @@ The **outcome variable** for this analysis is the **adjusted closing price (`adj
 #| echo: false
 #| eval: true
 #| label: fig-outcome-var
-#| fig-cap: "Distribution of Adjusted Closing Prices by Stock"
+#| fig-cap: "Distribution of Adjusted Closing Prices for FAANG Stocks (January 2020–November 2024). This visualization presents histograms of the adjusted closing prices for Apple (AAPL), Amazon (AMZN), Google (GOOGL), Meta (META), and Netflix (NFLX). Each panel illustrates the frequency of daily closing prices within specific price ranges, highlighting the variability in stock performance across the FAANG group during the observed period."
 #| warning: false
 
 # Plot the distribution of the adjusted closing price, faceted by stock
@@ -109,7 +111,7 @@ ggplot(analysis_data, aes(x = adjusted)) +
     strip.text = element_text(face = "bold")
   )
 ```
-@fig-outcome-var illustrates the distribution of the adjusted closing prices (**'adjusted'**) for each FAANG stock, faceted by stock symbol. These distributions highlight the variability in stock prices across the companies, with stocks like NFLX showing higher price ranges, whereas GOOGL and AMZN have narrower distributions. The visual emphasizes the diverse price behavior among FAANG stocks, underscoring the need for tailored models that capture these unique trends. By normalizing for corporate actions like stock splits or dividends, the adjusted closing price serves as a reliable target variable for forecasting and analysis.
+@fig-outcome-var depict the distribution of adjusted closing prices for FAANG stocks over the period from January 2020 to November 2024. AAPL, AMZN, and GOOGL exhibit relatively compact distributions, with prices concentrated between $80–$200 for GOOGL and AMZN and $100–$250 for AAPL. META and NFLX show broader price ranges, with META peaking between $300–$400 and NFLX exhibiting the highest spread, spanning $250–$750. These distributions reflect the differing volatility and market dynamics of each stock, with META and NFLX experiencing higher fluctuations, likely influenced by company-specific events or broader market trends.
 
 ### Predictor Variables
 The predictor variables used to model the adjusted closing price are:
@@ -127,7 +129,7 @@ Together, these variables provide a robust framework for understanding and predi
 #| echo: false
 #| eval: true
 #| label: tbl-pred-var
-#| tbl-cap: "Random Sample of Predictive Variables for Modeling Adjusted Closing Price"
+#| tbl-cap: "Random Sample of Predictive Variables for Modeling Adjusted Closing Price. Showcases a sample of the predictive variables derived from raw stock data, including lagged prices, rolling averages, simple moving averages (SMA), volatility, daily returns, and symbol encodings."
 #| warning: false
 
 # Select and display random sample of predictive variables from analysis_data
@@ -159,7 +161,7 @@ analysis_data %>%
   )
 
 ```
-@tbl-pred-var displays a random selection of five rows from the dataset, showcasing the predictive variables utilized in the modeling process. Each row represents data for a specific stock, including values for lagged adjusted closing prices (Lag_1), smoothed weekly averages (Rolling Mean (7-Day)), and medium- and long-term moving averages (SMA (20-Day) and SMA (50-Day)). These variables are complemented by measures of price volatility, daily percentage returns (Daily Return), and an encoded numerical identifier for the stock symbol (Symbol (Encoded)). All values are rounded to two decimal places to enhance clarity and precision.
+@tbl-pred-var provides a snapshot of the engineered predictive variables used in the modeling process. **'Lag_1'** reflects the adjusted closing price from the prior day, serving as a baseline for trend predictions. Rolling averages and simple moving averages (e.g., 7-day, 20-day, and 50-day) smooth out short-term fluctuations and emphasize broader price trends. Volatility, calculated as the 20-day rolling standard deviation, quantifies market uncertainty, while daily returns measure the day-to-day percentage change in adjusted closing price. The inclusion of symbol encodings ensures the model distinguishes between stocks while analyzing aggregate trends. These variables were carefully selected to balance short-term variability with medium-term patterns, enabling robust and reliable predictions.
 
 # Model {#sec-model}
 
@@ -389,7 +391,7 @@ dec_results <- dec_test %>%
 #| echo: false
 #| eval: true
 #| label: fig-nov-actual-pred
-#| fig-cap: "Comparison of actual (blue) vs. predicted (red) adjusted closing stock prices for FAANG companies in November 2024. Highlights the model's ability to capture general trends but shows variability in performance across stocks, particularly for Netflix (NFLX)"
+#| fig-cap: "Comparison of actual (blue) vs. predicted (red) adjusted closing stock prices for FAANG companies in November 2024. Evaluates the November model’s predictive performance across Apple (AAPL), Amazon (AMZN), Google (GOOGL), Meta (META), and Netflix (NFLX)."
 #| warning: false
 
 # Plot actual vs predicted prices for November 2024
@@ -410,7 +412,7 @@ ggplot(nov_results, aes(x = as.Date(date))) +
     axis.text.x = element_text(angle = 45, hjust = 1)
   )
 ```
-@fig-nov-actual-pred compares actual (blue) and predicted (red) stock prices for FAANG companies during November 2024. The model captures trends effectively for AAPL and META, where predictions align closely with observed prices. However, for NFLX, discrepancies appear later in the month, indicating the model's limitations in capturing certain market volatilities.
+@fig-nov-actual-pred indicates strong predictive performance for AAPL and META, where predicted prices closely follow actual trends, indicating the model's effectiveness in capturing both upward and downward market movements. AMZN and GOOGL exhibit moderate alignment, with some deviations occurring during periods of higher volatility, suggesting that while the model captures general trends, it struggles with abrupt changes. In contrast, NFLX demonstrates notable discrepancies, especially in the second half of November, where the predicted values fail to reflect the sharp upward trend observed in actual prices. These results highlight the model's capacity to replicate stable patterns but expose its limitations in adapting to rapid price movements, particularly for stocks like NFLX that experience heightened volatility. 
 
 ## Average Predicted Stock Price - November
 ```{r}
@@ -442,7 +444,7 @@ ggplot(nov_avg_prices, aes(x = symbol, y = avg_predicted_price, fill = symbol)) 
   scale_fill_brewer(palette = "Set2")
 
 ```
-@fig-nov-avg shows the average predicted stock prices for FAANG companies in November 2024. Netflix (NFLX) has the highest predicted average price (~$750), followed by Meta (META) at just above $500. Apple (AAPL), Amazon (AMZN), and Google (GOOGL) exhibit lower averages, at ~$225, ~$210, and ~$180, respectively. The chart highlights Netflix's expected strong performance compared to other FAANG companies. 
+@fig-nov-avg displays that the November model predicts that Netflix (NFLX) will have the highest average stock price at approximately $750, reflecting its anticipated dominance among FAANG stocks. Meta (META) follows with an average price just above $500, while Apple (AAPL), Amazon (AMZN), and Google (GOOGL) show significantly lower predicted averages, at around $225, $210, and $180, respectively. This result emphasizes the expected outperformance of Netflix and Meta, suggesting stronger market confidence in these two companies for November. Meanwhile, the comparatively lower averages for AAPL, AMZN, and GOOGL may indicate either more stable price trends or less aggressive growth potential modeled for these stocks during this period.
 
 ## Predicted Stock Price Trends - December
 
@@ -450,7 +452,7 @@ ggplot(nov_avg_prices, aes(x = symbol, y = avg_predicted_price, fill = symbol)) 
 #| echo: false
 #| eval: true
 #| label: fig-dec-pred
-#| fig-cap: "Predicted stock prices for FAANG companies in December 2024. The model predicts relatively flat price trends for all companies, with Netflix having the highest predicted price and Google the lowest"
+#| fig-cap: "Predicted stock prices for FAANG companies in December 2024. Illustrates the predicted stock prices for FAANG companies during December 2024, highlighting flat trends across all stocks and minimal variation over the month."
 #| warning: false
 
 ggplot(dec_results, aes(x = as.Date(date), y = predicted_adjusted, color = symbol)) +
@@ -467,7 +469,9 @@ ggplot(dec_results, aes(x = as.Date(date), y = predicted_adjusted, color = symbo
     axis.text.x = element_text(angle = 45, hjust = 1)
   )
 ```
-@fig-dec-pred presents the predicted stock prices for FAANG companies in December 2024, showing flat trends with no significant fluctuations. Netflix (NFLX) has the highest predicted price, while Google (GOOGL) has the lowest. Such flat trends highlight potential limitations in the model's ability to capture real-world stock price volatility, further detailed in [Appendix -@sec-model-limitations].
+@fig-dec-pred reveals flat stock price trends for all FAANG companies, with no significant fluctuations throughout the month. Netflix (NFLX) is projected to maintain the highest price, exceeding $875, while Google (GOOGL) consistently exhibits the lowest price, just above $200. Apple (AAPL), Amazon (AMZN), and Meta (META) display similar stability, with their prices clustered between $250 and $600. These flat trends suggest that the model struggles to capture potential market dynamics and daily volatilities, likely due to the absence of real-world influences such as macroeconomic shifts or investor sentiment in the input data. Further discussion on these limitations is provided in [Appendix -@sec-model-limitations].
+
+
 
 ## Average Stock Prices Bar Chart - December
 
@@ -500,14 +504,14 @@ ggplot(dec_avg_prices, aes(x = symbol, y = avg_predicted_price, fill = symbol)) 
   scale_fill_brewer(palette = "Set2")
 
 ```
-@fig-dec-avg shows the average predicted December 2024 stock prices for FAANG companies. Netflix (NFLX) leads with the highest predicted price, just around $825, followed by Meta (META) at $600. Apple (AAPL), Amazon (AMZN), and Google (GOOGL) are projected significantly lower, around $250, $200, and $200, respectively. These predictions highlight Netflix's strong expected performance compared to its peers, reflecting trends modeled from historical data.
+@fig-dec-avg shows that Netflix (NFLX) is expected to outperform its peers with an average price nearing $825, followed by Meta (META) at approximately $600. Apple (AAPL), Amazon (AMZN), and Google (GOOGL) show significantly lower average predicted prices, clustering around $250, $200, and $200, respectively. These results suggest Netflix’s dominance in price performance among FAANG stocks, likely reflecting historical trends captured by the model. However, the flat trends and low variability in predictions suggest limitations in the model's capacity to incorporate dynamic market factors and real-world volatility.
 
 ## Combined November and December
 ```{r}
 #| echo: false
 #| eval: true
 #| label: fig-nov-dec-pred
-#| fig-cap: "Predicted stock prices for FAANG companies across November (red) and December (teal) 2024. November predictions exhibit variability, particularly for Apple (AAPL), Meta (META), Amazon (AMZN), and Google (GOOGL), while December predictions flatten, showing minimal fluctuations. Netflix (NFLX) remains nearly flat across both months. Highlights the model's reduced sensitivity to potential market dynamics in December."
+#| fig-cap: "Predicted stock prices for FAANG companies across November (red) and December (teal) 2024. November predictions exhibit variability, particularly for Apple (AAPL), Meta (META), Amazon (AMZN), and Google (GOOGL), while December predictions flatten, showing minimal fluctuations. Netflix (NFLX) remains nearly flat across both months."
 #| warning: false
 
 # Combine November and December results
@@ -538,7 +542,7 @@ ggplot(combined_results, aes(x = as.Date(date), y = predicted_adjusted, color = 
 
 
 ```
-@fig-nov-dec-pred illustrates predicted FAANG stock prices for November (teal) and December (red) 2024. November shows dynamic trends for Apple (AAPL), Meta (META), Amazon (AMZN), and Google (GOOGL), while December predictions flatten across all companies, particularly Netflix (NFLX). This highlights the model's limitation in capturing market volatility and end-of-year dynamics.
+@fig-nov-dec-pred displays contrasting trends - November predictions reflect the market's dynamic nature, with AAPL and META showing upward trends and AMZN and GOOGL demonstrating fluctuations. Conversely, December predictions exhibit flat trends across all FAANG companies, particularly for NFLX, which remains static throughout the month. This stark contrast underscores the model's inability to adapt to market changes and capture potential end-of-year volatilities, limiting its effectiveness for December forecasting.
 
 ## Average Predicted Stock Prices for November and December 2024
 
@@ -568,7 +572,7 @@ ggplot(avg_predicted_prices, aes(x = symbol, y = avg_price, fill = month)) +
     fill = "Month"
   )
 ```
-@fig-nov-dec-avg compares the average predicted stock prices for FAANG companies in November (red) and December (teal) 2024. Netflix (NFLX) shows the highest predicted prices and a notable increase from November to December. Meta (META) also exhibits a slight increase, while Apple (AAPL), Amazon (AMZN), and Google (GOOGL) show minimal variations, indicating relative stability in their predicted prices across the two months. Only Google (GOOGL) displays a slight month-to-month decrease, suggesting for further validation and data analysis. 
+@fig-nov-dec-avg compares the average predicted stock prices for FAANG companies in November (red) and December (teal) 2024, revealing varying dynamics across the companies. Netflix (NFLX) consistently leads with the highest prices, increasing significantly from November to December. Meta (META) follows a similar upward trend, albeit less pronounced. In contrast, Apple (AAPL), Amazon (AMZN), and Google (GOOGL) remain relatively stable, reflecting the model's ability to capture consistent trends for these stocks. Google's slight decrease between the months may suggest unique market dynamics requiring deeper investigation, particularly in the context of broader market sentiment and sector-specific factors. 
 
 # Discussion {#sec-discussion}
 
@@ -594,13 +598,9 @@ Further model diagnostics, including feature importance evaluations and residual
 #| echo: false
 #| eval: true
 #| label: tbl-election-effect
-#| tbl-cap: "FAANG Stock Prices for One Trading Day Before and After the Election (2016, 2020, and 2024)"
+#| tbl-cap: "Stock prices of FAANG companies one trading day before and after the U.S. Presidential Elections in 2016, 2020, and 2024. Most companies show an upward price change after the elections, particularly in 2024, where all FAANG stocks experienced increases, with Netflix (NFLX) recording the largest absolute gain."
 #| warning: false
 
-library(tidyquant)
-library(dplyr)
-library(tidyr)
-library(knitr)
 
 # Load FAANG tickers
 faang_tickers <- c("AAPL", "AMZN", "GOOGL", "META", "NFLX")
@@ -735,7 +735,7 @@ Unlike traditional time-series models such as ARIMA, which assume stationarity a
 #| echo: false
 #| eval: true
 #| label: fig-nov-feature-importance
-#| fig-cap: "November Feature Importance"
+#| fig-cap: "Feature importance for the November model. Lagged stock price (Lag_1) is the most significant predictor, followed by the 7-day rolling mean (Rolling_Mean_7). Other features, including daily returns, simple moving averages (sma_20, sma_50), volatility, and symbol encoding, contribute minimally to the model's predictions."
 #| warning: false
 #| cache: false
 
@@ -776,12 +776,9 @@ xgb.plot.importance(
 #| echo: false
 #| eval: true
 #| label: fig-dec-feature-importance
-#| fig-cap: "Feature Importance for December Model"
+#| fig-cap: "Feature importance for the December model. Highlights Lag_1 as the most influential predictor, followed by the 7-day rolling mean (Rolling_Mean_7). Other features, including daily returns, simple moving averages (sma_20, sma_50), volatility, and symbol encoding, have minimal contributions to the model's predictive capability."
 #| warning: false
 #| cache: false
-
-
-
 
   dec_train <- analysis_data %>%
     filter(as.Date(date) <= as.Date("2024-11-30"))
@@ -815,7 +812,7 @@ xgb.plot.importance(
 #| echo: false
 #| eval: true
 #| label: fig-nov-residual-analysis
-#| fig-cap: "Residuals vs. fitted values for the November model. The residuals are centered around zero, indicating accurate predictions overall, though some systematic deviations and outliers are observed at higher fitted values."
+#| fig-cap: "Residuals vs. fitted values for the November model. Residuals are centered around zero, indicating no major bias, but increased variability at higher fitted values suggests reduced accuracy for extreme stock prices."
 #| warning: false
 
 # November Model Training
